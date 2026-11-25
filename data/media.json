@@ -15,40 +15,136 @@
       "preview": "/images/panorama/panorama-2-preview.webp"
     }
   ],
-
   "gallery": [
-    { "src": "/images/gallery/bild-01", "w": 1800, "h": 1200, "alt": "Bergkette mit verschneiten Gipfeln über dem Wald", "caption": "Morgens über dem Tal" },
-    { "src": "/images/gallery/bild-02", "w": 1800, "h": 1200, "alt": "Bergsee, in dem sich Wald und Gipfel spiegeln", "caption": "Der Bergsee im Winter" },
-    { "src": "/images/gallery/bild-03", "w": 1200, "h": 1500, "alt": "Steile Bergflanke mit Nadelwald", "caption": "Waldweg zur Alp" },
-    { "src": "/images/gallery/bild-04", "w": 1800, "h": 1200, "alt": "Nachthimmel mit Sternen über dunklen Bergen", "caption": "Sternennacht" },
-    { "src": "/images/gallery/bild-05", "w": 1800, "h": 1200, "alt": "Ruhiger See vor gestaffelten Bergrücken", "caption": "Abendstille am Wasser" },
-    { "src": "/images/gallery/bild-06", "w": 1200, "h": 1500, "alt": "Hohe Gipfel mit Schneefeldern", "caption": "Gipfel im Hochwinter" },
-    { "src": "/images/gallery/bild-07", "w": 1800, "h": 1200, "alt": "Bergrücken mit Tannen im Vordergrund", "caption": "Blick vom Skigebiet" },
-    { "src": "/images/gallery/bild-08", "w": 1800, "h": 1200, "alt": "Bergsee bei Nacht unter Sternen", "caption": "Der See bei Nacht" },
-    { "src": "/images/gallery/bild-09", "w": 1200, "h": 1500, "alt": "Bergkette im Hochformat mit Wald", "caption": "Aufstieg zur Hütte" }
+    {
+      "src": "https://images.unsplash.com/photo-1673257147506-76c1945d2bef",
+      "w": 1200,
+      "h": 800,
+      "alt": "Kirche vor verschneitem Berg",
+      "caption": "Kirche im Winter",
+      "credit": "Joël de Vriend",
+      "creditUrl": "https://unsplash.com/photos/3z273OItX1c"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1767367715058-86c05f71469b",
+      "w": 1000,
+      "h": 1250,
+      "alt": "Verschneites Dorf im frostigen Wald vor Bergen",
+      "caption": "Raureif über dem Dorf",
+      "credit": "Christopher Politano",
+      "creditUrl": "https://unsplash.com/photos/n4MEe-VbCTo"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1734550268367-9e6badcfbce4",
+      "w": 1200,
+      "h": 800,
+      "alt": "Skifahrer auf einem Sessellift in der Sonne",
+      "caption": "Mit dem Sessellift nach oben",
+      "credit": "Greg Rosenke",
+      "creditUrl": "https://unsplash.com/photos/BrhrfzRlg7c"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1765400122871-cfa40ca51ee6",
+      "w": 1200,
+      "h": 800,
+      "alt": "Holzstand mit Weihnachtslichtern am Abend",
+      "caption": "Adventsmarkt am Dorfplatz",
+      "credit": "Maksim Shutov",
+      "creditUrl": "https://unsplash.com/photos/rHnEjicRh8U"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1767454218314-0e880df06d88",
+      "w": 1000,
+      "h": 1250,
+      "alt": "Holzhütte in verschneiter Landschaft",
+      "caption": "Holz, Schnee und Stille",
+      "credit": "Sijmen van Hooff",
+      "creditUrl": "https://unsplash.com/photos/JRQZP7X_-vk"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1759924417962-af223f2c6f3d",
+      "w": 1200,
+      "h": 800,
+      "alt": "Bergsee spiegelt schneebedeckte Gipfel unter blauem Himmel",
+      "caption": "Der Bergsee",
+      "credit": "Claudio Biesele",
+      "creditUrl": "https://unsplash.com/photos/OtokIOPILX8"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1724101541309-578ff3bffd9a",
+      "w": 1000,
+      "h": 1250,
+      "alt": "Musiker spielt Akkordeon",
+      "caption": "Musik gehört dazu",
+      "credit": "Paula Morin",
+      "creditUrl": "https://unsplash.com/photos/9t_Fwg0TE1E"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1484256086415-26be68bfc249",
+      "w": 1200,
+      "h": 800,
+      "alt": "Menschen auf einer sonnigen Skipiste",
+      "caption": "Pistentag",
+      "credit": "Toa Heftiba",
+      "creditUrl": "https://unsplash.com/photos/nqQPkW-vwjs"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1575659458448-27b1d2836de2",
+      "w": 1200,
+      "h": 800,
+      "alt": "Weihnachtsmarkt mit Lichtern und vielen Menschen",
+      "caption": "Lichter im Advent",
+      "credit": "Daniels Joffe",
+      "creditUrl": "https://unsplash.com/photos/pkDKjsPAAi4"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1754962851393-ce35b4cb7e45",
+      "w": 1200,
+      "h": 800,
+      "alt": "Wanderer auf einem Weg an einem Bergsee",
+      "caption": "Wandern am Wasser",
+      "credit": "Brandee Taylor",
+      "creditUrl": "https://unsplash.com/photos/ycb6trpsoMc"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1677948846204-d024e93b6ccf",
+      "w": 1000,
+      "h": 1250,
+      "alt": "Fussballplatz zwischen Felsen und Meer aus der Luft",
+      "caption": "Fussball mit Aussicht",
+      "credit": "Jonas Schöne",
+      "creditUrl": "https://unsplash.com/photos/4W2CZ1hySZk"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1780845162890-1d6a2cc8d507",
+      "w": 1200,
+      "h": 800,
+      "alt": "Alpendorf mit Kirche vor bewaldeten Bergen",
+      "caption": "Das Dorf im Tal",
+      "credit": "Arjun Raj",
+      "creditUrl": "https://unsplash.com/photos/4_N0kPJ5v6s"
+    }
   ],
-
   "videos": [
     {
       "youtubeId": "aqz-KE-bpKQ",
       "title": "Ein Wintertag in Steinbach",
       "text": "Vom ersten Lift bis zum Sonnenuntergang auf der Terrasse.",
-      "poster": "/images/gallery/bild-01-1800.webp"
+      "poster": "https://images.unsplash.com/photo-1734550268358-018a08b0ea32"
     },
     {
       "youtubeId": "aqz-KE-bpKQ",
       "title": "Bergsee & Schlucht",
       "text": "Die schönsten Wege rund ums Dorf.",
-      "poster": "/images/gallery/bild-05-1800.webp"
+      "poster": "https://images.unsplash.com/photo-1654613373407-d162da399623"
     },
     {
       "youtubeId": "aqz-KE-bpKQ",
       "title": "Pisten von oben",
       "text": "Drohnenflug über das Skigebiet.",
-      "poster": "/images/gallery/bild-07-1800.webp"
+      "poster": "https://images.unsplash.com/photo-1484256086415-26be68bfc249"
     }
   ],
-
   "places": [
     {
       "id": "bergsee",
@@ -56,7 +152,11 @@
       "distance": "20 Min. zu Fuss",
       "kind": "Wasser",
       "text": "Ein klarer See unter dem Gipfel. Im Winter gefroren und ideal für einen Spaziergang, im Sommer zum Baden.",
-      "image": "/images/places/ort-2"
+      "image": "https://images.unsplash.com/photo-1764253682608-95abf7015626",
+      "credit": "Christopher Politano",
+      "creditUrl": "https://unsplash.com/photos/04gBRs76feg",
+      "lat": 46.6085,
+      "lon": 8.2105
     },
     {
       "id": "schlucht",
@@ -64,7 +164,11 @@
       "distance": "45 Min. zu Fuss",
       "kind": "Stein",
       "text": "Ein gesicherter Steg führt durch die enge Felsschlucht – mit Wasserfällen und Eiszapfen im Winter.",
-      "image": "/images/places/ort-1"
+      "image": "https://images.unsplash.com/photo-1654613373407-d162da399623",
+      "credit": "Daniel Schmidt",
+      "creditUrl": "https://unsplash.com/photos/qCbDJfbDot4",
+      "lat": 46.5935,
+      "lon": 8.1885
     },
     {
       "id": "alp",
@@ -72,7 +176,11 @@
       "distance": "1 Std. Winterwanderung",
       "kind": "Holz",
       "text": "Eine Holzhütte aus dem 18. Jahrhundert mit Bergkäse, Suppe und Blick über das Tal.",
-      "image": "/images/places/ort-3"
+      "image": "https://images.unsplash.com/photo-1740070097382-739a90189550",
+      "credit": "Martin Masson",
+      "creditUrl": "https://unsplash.com/photos/JpJzc_yO1QQ",
+      "lat": 46.6115,
+      "lon": 8.183
     },
     {
       "id": "gipfel",
@@ -80,7 +188,11 @@
       "distance": "15 Min. mit der Bahn",
       "kind": "Metall",
       "text": "Die Hängebrücke aus Stahl auf 2600 m bietet einen Blick über 40 Viertausender.",
-      "image": "/images/places/ort-4"
+      "image": "https://images.unsplash.com/photo-1762661122540-10645eafc95c",
+      "credit": "Frank Huang",
+      "creditUrl": "https://unsplash.com/photos/gB1v-Rf4OyQ",
+      "lat": 46.588,
+      "lon": 8.224
     }
   ]
 }

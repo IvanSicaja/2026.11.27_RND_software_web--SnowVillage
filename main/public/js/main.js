@@ -135,7 +135,7 @@ function initGallery() {
     const a = items[index];
     img.src = a.href;
     img.alt = a.dataset.alt || '';
-    cap.textContent = a.dataset.caption || '';
+    cap.textContent = [a.dataset.caption, a.dataset.credit].filter(Boolean).join(' · ');
     count.textContent = items.length > 1 ? `${index + 1} / ${items.length}` : '';
     // Nachbarn vorladen
     for (const n of [index + 1, index - 1]) {
@@ -201,7 +201,164 @@ function initVideos() {
   }
 }
 
+/* ---------- Hero-Karussell ---------- */
+function initCarousel() {
+  const root = $('[data-carousel]');
+  const hero = root?.closest('.hero');
+  const slides = root ? $$('[data-slide]', root) : [];
+  if (slides.length < 2) return;
+  const dots = $$('[data-carousel-dot]', hero);
+  const toggle = $('[data-carousel-toggle]', hero);
+  const controls = $('[data-carousel-controls]', hero);
+  const DELAY = 6000;
+  let index = 0;
+  let timer = null;
+  let userPaused = reducedMotion; // Bei "Bewegung reduzieren" startet die Diashow nicht von selbst
+  let holds = 0; // Maus darüber / Fokus darin
+
+  const go = (i) => {
+    index = (i + slides.length) % slides.length;
+    slides.forEach((sl, n) => {
+      const active = n === index;
+      sl.classList.toggle('is-active', active);
+      sl.inert = !active;
+    });
+    dots.forEach((d, n) => (n === index ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
+    root.dataset.index = String(index);
+  };
+  const stop = () => {
+    clearInterval(timer);
+    timer = null;
+  };
+  const start = () => {
+    stop();
+    if (!userPaused && holds === 0 && !document.hidden) timer = setInterval(() => go(index + 1), DELAY);
+  };
+  const renderToggle = () => {
+    controls.classList.toggle('is-paused', userPaused);
+    toggle.setAttribute('aria-label', userPaused ? 'Diashow starten' : 'Diashow anhalten');
+  };
+
+  toggle.addEventListener('click', () => {
+    userPaused = !userPaused;
+    renderToggle();
+    start();
+  });
+  dots.forEach((d) =>
+    d.addEventListener('click', () => {
+      go(Number(d.dataset.carouselDot));
+      start();
+    }),
+  );
+  hero.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && (holds++, stop()));
+  hero.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && ((holds = Math.max(0, holds - 1)), start()));
+  hero.addEventListener('focusin', () => (holds++, stop()));
+  hero.addEventListener('focusout', () => ((holds = Math.max(0, holds - 1)), start()));
+  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+
+  // Wischen
+  let x0 = null;
+  root.addEventListener('touchstart', (e) => (x0 = e.touches[0].clientX), { passive: true });
+  root.addEventListener('touchend', (e) => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 40) {
+      go(index + (dx < 0 ? 1 : -1));
+      start();
+    }
+    x0 = null;
+  });
+
+  go(0);
+  renderToggle();
+  start();
+}
+
+/* ---------- Wetter ---------- */
+const WEATHER_ICONS = {
+  sun: '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
+  'cloud-sun': '<path d="M8 3.5v1.5M3.5 8H5M4.8 4.8l1 1M12.2 4.8l-1 1"/><path d="M5.6 10.4A3.5 3.5 0 0 1 11.6 7"/><path d="M7 20h10a4 4 0 0 0 .4-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 7 20z"/>',
+  cloud: '<path d="M6.5 19h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6 1.6A3.7 3.7 0 0 0 6.5 19z"/>',
+  fog: '<path d="M4 9h16M3 13h18M5 17h14"/>',
+  rain: '<path d="M6.5 15h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6 1.6A3.7 3.7 0 0 0 6.5 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
+  snow: '<path d="M6.5 14h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6 1.6A3.7 3.7 0 0 0 6.5 14z"/><path d="M8 18h.01M12 20h.01M16 18h.01M10 22h.01M14 22h.01"/>',
+  storm: '<path d="M6.5 14h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6 1.6A3.7 3.7 0 0 0 6.5 14z"/><path d="M12.5 15l-2 4h3l-2 4"/>',
+};
+const deg = (n) => (n == null ? '–' : `${n < 0 ? '−' : ''}${Math.abs(n)}°`);
+
+async function initWeather() {
+  const card = $('[data-weather]');
+  const chip = $('[data-weather-chip]');
+  if (!card && !chip) return;
+  try {
+    const res = await fetch('/api/wetter', { headers: { accept: 'application/json' } });
+    if (!res.ok) return;
+    const w = await res.json();
+    if (!w.ok || typeof w.temperature !== 'number') return;
+    const icon = `<svg class="icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WEATHER_ICONS[w.icon] || WEATHER_ICONS.cloud}</svg>`;
+    if (card) {
+      $('[data-w-icon]', card).innerHTML = icon;
+      $('[data-w-temp]', card).textContent = deg(w.temperature);
+      $('[data-w-text]', card).textContent = w.text;
+      $('[data-w-range]', card).textContent = `${deg(w.min)} / ${deg(w.max)}`;
+      $('[data-w-feels]', card).textContent = deg(w.feelsLike);
+      $('[data-w-wind]', card).textContent = w.wind == null ? '–' : `${w.wind} km/h`;
+      card.hidden = false;
+    }
+    if (chip) {
+      chip.innerHTML = icon.replace(/width="40" height="40"/, 'width="20" height="20"');
+      const temp = document.createElement('span');
+      temp.textContent = deg(w.temperature);
+      const extra = document.createElement('span');
+      extra.className = 'chip-extra';
+      extra.textContent = ` · ${w.text} · ${w.place}`;
+      chip.append(temp, extra);
+      chip.setAttribute('aria-label', `Aktuell ${deg(w.temperature)}, ${w.text} in ${w.place}`);
+      chip.hidden = false;
+    }
+  } catch {
+    /* Ohne Wetter geht es auch – Bereich bleibt einfach verborgen */
+  }
+}
+
+/* ---------- Karte (Leaflet wird erst geladen, wenn die Karte in Sicht kommt) ---------- */
+function initMaps() {
+  const blocks = $$('[data-map]');
+  if (!blocks.length) return;
+  const load = (block) => import(document.documentElement.dataset.karte || '/js/karte.js').then((m) => m.createMap(block)).catch((err) => {
+    console.warn(err);
+    const ph = $('.map-placeholder', block);
+    if (ph) ph.textContent = 'Die Karte konnte nicht geladen werden.';
+  });
+  if (!('IntersectionObserver' in window)) return blocks.forEach(load);
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      io.unobserve(e.target);
+      load(e.target);
+    }
+  }, { rootMargin: '400px 0px' });
+  blocks.forEach((b) => io.observe(b));
+}
+
+/* ---------- Ersatzbild, falls ein externes Foto nicht lädt ---------- */
+function initImageFallback() {
+  const swap = (img) => {
+    if (img.dataset.fallback === 'done' || !/^https?:/.test(img.getAttribute('src') || '')) return;
+    img.dataset.fallback = 'done';
+    img.removeAttribute('srcset');
+    img.src = '/images/fallback.webp';
+  };
+  document.addEventListener('error', (e) => e.target instanceof HTMLImageElement && swap(e.target), true);
+  // Fehler, die vor dem Laden dieses Scripts passiert sind
+  for (const img of document.images) if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) swap(img);
+}
+
+initImageFallback();
 initNav();
+initCarousel();
+initWeather();
+initMaps();
 initPanoramas();
 initGallery();
 initVideos();

@@ -3,6 +3,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { Marked } from 'marked';
+import { prepareMapData } from './map.js';
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -91,11 +92,12 @@ function parseArticle(dir, file) {
 
 export function createContentStore(contentDir) {
   const articlesDir = join(contentDir, 'articles');
-  let cache = { key: '', site: null, media: null, articles: [] };
+  let cache = { key: '', site: null, media: null, articles: [], mapItems: [] };
 
   function fingerprint() {
     const parts = [];
     for (const f of ['site.json', 'media.json']) parts.push(f + statSync(join(contentDir, f)).mtimeMs);
+    try { parts.push('karte' + statSync(join(contentDir, 'karte.geojson')).mtimeMs); } catch { parts.push('karte-'); }
     parts.push(statSync(articlesDir).mtimeMs);
     for (const f of readdirSync(articlesDir)) if (f.endsWith('.md')) parts.push(f + statSync(join(articlesDir, f)).mtimeMs);
     return parts.join('|');
@@ -106,6 +108,12 @@ export function createContentStore(contentDir) {
     if (key === cache.key) return cache;
     const site = JSON.parse(readFileSync(join(contentDir, 'site.json'), 'utf8'));
     const media = JSON.parse(readFileSync(join(contentDir, 'media.json'), 'utf8'));
+    let mapItems = [];
+    try {
+      mapItems = prepareMapData(JSON.parse(readFileSync(join(contentDir, 'karte.geojson'), 'utf8')));
+    } catch (err) {
+      if (err.code !== 'ENOENT') console.error('[content] karte.geojson fehlerhaft:', err.message);
+    }
     const parsed = [];
     for (const f of readdirSync(articlesDir).filter((f) => f.endsWith('.md'))) {
       try {
@@ -119,7 +127,7 @@ export function createContentStore(contentDir) {
     // Bei gleichem Slug gewinnt der neueste Artikel
     const seen = new Set();
     const articles = parsed.filter((a) => !seen.has(a.slug) && seen.add(a.slug));
-    cache = { key, site, media, articles };
+    cache = { key, site, media, articles, mapItems };
     return cache;
   }
 
@@ -127,6 +135,7 @@ export function createContentStore(contentDir) {
     get site() { return load().site; },
     get media() { return load().media; },
     get articles() { return load().articles; },
+    get mapItems() { return load().mapItems; },
     article(slug) {
       if (!isValidSlug(slug)) return null;
       return load().articles.find((a) => a.slug === slug) || null;

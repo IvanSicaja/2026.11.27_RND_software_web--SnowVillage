@@ -2,7 +2,7 @@
 title: Saisonstart am 12. Dezember
 date: 2026-11-01
 excerpt: Die Bahnen öffnen am 12. Dezember. Was neu ist, wo es Saisonkarten gibt und welche Pisten zuerst offen sind.
-image: /images/gallery/bild-07
+image: https://images.unsplash.com/photo-1734550268367-9e6badcfbce4
 category: Skigebiet
 ---
 

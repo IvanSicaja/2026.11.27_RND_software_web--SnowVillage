@@ -26,3 +26,6 @@ desktop.ini
 # Editoren
 .vscode/
 .idea/
+
+# Automatische Sicherung beim Karten-Import
+data/karte.backup.geojson

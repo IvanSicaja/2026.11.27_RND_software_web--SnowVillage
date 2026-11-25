@@ -9,6 +9,9 @@ Diese Website verwendet folgende Open-Source-Bausteine:
 | [compression](https://github.com/expressjs/compression) | Gzip-Kompression | MIT |
 | [marked](https://marked.js.org/) | Markdown für Blog-Artikel | MIT |
 | [Pannellum](https://pannellum.org/) | 360°-Panorama-Viewer | MIT |
+| [Leaflet](https://leafletjs.com/) | Interaktive Karte | BSD-2-Clause |
+| [@tmcw/togeojson](https://github.com/placemark/togeojson) | KML/GPX-Import (Entwicklung) | BSD-2-Clause |
+| [@xmldom/xmldom](https://github.com/xmldom/xmldom) | XML lesen (Entwicklung) | MIT |
 | [Inter](https://rsms.me/inter/) via @fontsource-variable/inter | Schrift | SIL Open Font License 1.1 |
 | [sharp](https://sharp.pixelplumbing.com/) | Bildumwandlung (Entwicklung) | Apache-2.0 |
 | [Playwright](https://playwright.dev/) | Browser-Tests (Entwicklung) | Apache-2.0 |
@@ -17,8 +20,10 @@ Diese Website verwendet folgende Open-Source-Bausteine:
 
 Die vollständigen Lizenztexte liegen nach `npm install` in `main/node_modules/<paket>/LICENSE`.
 
-## Bilder, Videos, Texte
+## Bilder, Videos, Texte, Karten, Wetter
 
-- Alle Bilder und 360°-Panoramen in `main/public/images/` sind **selbst erzeugte Platzhalter** (frei verwendbar). Sie werden durch eigene Fotos ersetzt.
-- Die YouTube-Videos in `data/media.json` sind **Platzhalter** (Beispielfilm „Big Buck Bunny“, © Blender Foundation, CC BY 3.0) und werden durch eigene Videos ersetzt.
-- Eigene Fotos und Videos: Urheber und Nutzungsrechte bitte in `copyright/` festhalten (z. B. `bildrechte.md`).
+- Fotos: Unsplash-Lizenz – vollständige Liste in [bildnachweis.md](bildnachweis.md).
+- Die Bilder in `main/public/images/` (Panoramen, Ersatzbild) sind **selbst erzeugte Platzhalter** (frei verwendbar).
+- Die YouTube-Videos in `data/media.json` sind **Platzhalter** (Beispielfilm „Big Buck Bunny“, © Blender Foundation, CC BY 3.0).
+- Karten: © OpenStreetMap-Mitwirkende, OpenTopoMap. Wetter: Open-Meteo (CC BY 4.0).
+- Eigene Fotos und Videos: Urheber und Nutzungsrechte bitte in `copyright/` festhalten.

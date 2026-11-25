@@ -52,13 +52,19 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.1 - project structure set up
+v0.0.2
 
 ### TODOs / To Fix
 
 ### Fixed / Improved
 
 ### Added / New Features
+- made the entire website fully mobile first
+- added hero section with welcome text real temperature and geographic location
+- implemented five image carousel with nature and village theme
+- integrated Google Maps in the nearby section
+- prepared structure for hiking running cycling routes and viewpoints
+- applied modern dark theme inspired by Visit Norway and Swiss quality
 
 ### Additional Comment
 

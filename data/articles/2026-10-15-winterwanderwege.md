@@ -2,7 +2,7 @@
 title: Drei Winterwanderungen für ruhige Tage
 date: 2026-10-15
 excerpt: Nicht jeder Tag muss auf der Piste sein. Drei gepfadete Wege zu See, Schlucht und Alp – mit Einkehr.
-image: /images/places/ort-3
+image: https://images.unsplash.com/photo-1754962851393-ce35b4cb7e45
 category: Ausflüge
 ---
 

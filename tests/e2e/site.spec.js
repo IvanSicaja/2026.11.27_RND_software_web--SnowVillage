@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { mockExternal, WEATHER } from './mocks.js';
 
-const PAGES = ['/', '/ausflugsziele', '/panorama', '/galerie', '/videos', '/blog', '/blog/saisonstart', '/info', '/impressum'];
+const PAGES = ['/', '/ausflugsziele', '/panorama', '/galerie', '/videos', '/blog', '/blog/saisonstart', '/blog/weihnachtssingen', '/info', '/impressum'];
 
-// Externe Dienste (YouTube) im Test nicht wirklich laden
+// Externe Dienste (Fotos, Karte, YouTube, Wetter) im Test durch lokale Daten ersetzen
 test.beforeEach(async ({ page }) => {
-  await page.route(/youtube-nocookie\.com|i\.ytimg\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
+  await mockExternal(page);
 });
 
 function collectErrors(page) {
@@ -33,6 +34,8 @@ for (const path of PAGES) {
       [...document.images].filter((i) => i.currentSrc && i.complete && i.naturalWidth === 0).map((i) => i.currentSrc),
     );
     expect(broken, 'kaputte Bilder').toEqual([]);
+    const fallbacks = await page.locator('img[data-fallback="done"]').count();
+    expect(fallbacks, 'Ersatzbilder verwendet').toBe(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, 'horizontaler Überlauf').toBeLessThanOrEqual(0);
 
@@ -164,7 +167,7 @@ test('Funktioniert auch ohne JavaScript', async ({ browser }) => {
   await page.goto('/videos');
   await expect(page.getByRole('link', { name: /Video abspielen/ }).first()).toHaveAttribute('href', /youtube\.com\/watch/);
   await page.goto('/galerie');
-  await expect(page.locator('[data-gallery-item]').first()).toHaveAttribute('href', /\.webp$/);
+  await expect(page.locator('[data-gallery-item]').first()).toHaveAttribute('href', /(\.webp|images\.unsplash\.com\/photo-[\w-]+\?.*w=2000.*)$/);
   await ctx.close();
 });
 
@@ -184,4 +187,132 @@ test('Ladezeit: Startseite schnell und leichtgewichtig', async ({ page }) => {
     () => new Promise((resolve) => new PerformanceObserver((l) => resolve(l.getEntries().at(-1).startTime)).observe({ type: 'largest-contentful-paint', buffered: true })),
   );
   expect(lcp).toBeLessThan(2500);
+});
+
+/* ---------- Neue Funktionen ---------- */
+
+test('Hero-Karussell: 5 Bilder, Punkte, Pause und automatischer Wechsel', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/');
+  const slides = page.locator('[data-slide]');
+  await expect(slides).toHaveCount(5);
+  await expect(slides.nth(0)).toHaveClass(/is-active/);
+  await expect(slides.nth(1)).toHaveAttribute('inert', '');
+
+  // Automatischer Wechsel nach 6 Sekunden
+  await page.mouse.move(0, 0);
+  await page.clock.runFor(6500);
+  await expect(slides.nth(1)).toHaveClass(/is-active/);
+  await expect(slides.nth(0)).not.toHaveClass(/is-active/);
+
+  // Punkt anklicken
+  await page.getByRole('button', { name: 'Bild 4 anzeigen' }).click();
+  await expect(slides.nth(3)).toHaveClass(/is-active/);
+  await expect(page.getByRole('button', { name: 'Bild 4 anzeigen' })).toHaveAttribute('aria-current', 'true');
+
+  // Pause: kein Wechsel mehr
+  await page.getByRole('button', { name: 'Diashow anhalten' }).click();
+  await expect(page.getByRole('button', { name: 'Diashow starten' })).toBeVisible();
+  await page.locator('h2').first().click(); // Fokus aus dem Karussell nehmen
+  await page.clock.runFor(20000);
+  await expect(slides.nth(3)).toHaveClass(/is-active/);
+});
+
+test('Karussell: Wischen auf dem Handy', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy');
+  await page.goto('/');
+  const box = await page.locator('[data-carousel]').boundingBox();
+  const y = box.y + box.height / 3;
+  await page.locator('[data-carousel]').dispatchEvent('touchstart', { touches: [{ identifier: 1, clientX: box.x + 300, clientY: y }] });
+  await page.locator('[data-carousel]').dispatchEvent('touchend', { changedTouches: [{ identifier: 1, clientX: box.x + 60, clientY: y }] });
+  await expect(page.locator('[data-slide]').nth(1)).toHaveClass(/is-active/);
+});
+
+test('Wetter: aktuelle Temperatur wird angezeigt', async ({ page }) => {
+  await page.goto('/');
+  const card = page.locator('[data-weather]');
+  await expect(card).toBeVisible();
+  await expect(card.locator('[data-w-temp]')).toHaveText('−4°');
+  await expect(card.locator('[data-w-text]')).toHaveText(WEATHER.text);
+  await expect(card.locator('[data-w-range]')).toHaveText('−8° / −1°');
+  await expect(card.locator('[data-w-wind]')).toHaveText('14 km/h');
+  await expect(page.locator('[data-weather-chip]')).toBeVisible();
+  await expect(page.locator('[data-weather-chip]')).toContainText('−4°');
+});
+
+test('Wetter: ohne Daten bleibt der Bereich unsichtbar, Seite funktioniert', async ({ page }) => {
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+  await mockExternal(page, { weather: null });
+  const jsErrors = [];
+  page.on('pageerror', (e) => jsErrors.push(e.message));
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('[data-weather]')).toBeHidden();
+  await expect(page.locator('[data-weather-chip]')).toBeHidden();
+  expect(jsErrors).toEqual([]);
+});
+
+test('Karte: lädt, Kategorien filtern, Popup mit Google-Maps-Link', async ({ page }) => {
+  await page.goto('/ausflugsziele');
+  const map = page.locator('[data-map]');
+  await expect(map).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
+  await expect(map.locator('.leaflet-tile-loaded').first()).toBeAttached();
+  const paths = map.locator('.leaflet-overlay-pane path');
+  const before = await paths.count();
+  expect(before).toBeGreaterThan(10);
+
+  const items = page.locator('[data-route-item][data-category="wandern"]');
+  await expect(items.first()).toBeVisible();
+  const wandern = page.locator('[data-map-filter="wandern"]');
+  await wandern.click();
+  await expect(wandern).toHaveAttribute('aria-pressed', 'false');
+  await expect(items.first()).toBeHidden();
+  expect(await paths.count()).toBeLessThan(before);
+  await wandern.click();
+  await expect(items.first()).toBeVisible();
+  expect(await paths.count()).toBe(before);
+
+  // "Auf der Karte zeigen" öffnet das Popup
+  await page.locator('[data-route-item]').first().getByRole('button', { name: 'Auf der Karte zeigen' }).click();
+  const popup = map.locator('.leaflet-popup');
+  await expect(popup).toBeVisible();
+  await expect(popup.locator('a.map-popup-link')).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=\d+\.\d+,\d+\.\d+$/);
+
+  // Alle Google-Links in der Liste sind gültig
+  for (const href of await page.locator('[data-route-item] a[href*="google.com/maps"]').evaluateAll((as) => as.map((a) => a.href))) {
+    expect(href).toMatch(/destination=-?\d+\.\d{5},-?\d+\.\d{5}$/);
+  }
+});
+
+test('Karte auf der Startseite lädt erst beim Hinscrollen', async ({ page }) => {
+  await page.goto('/');
+  const map = page.locator('[data-map]');
+  await expect(map).not.toHaveAttribute('data-state', /.+/);
+  await map.scrollIntoViewIfNeeded();
+  await expect(map).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
+});
+
+test('Karte auf dem Handy: erst nach Antippen verschiebbar', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy');
+  await page.goto('/ausflugsziele');
+  await expect(page.locator('[data-map]')).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
+  const hint = page.getByRole('button', { name: 'Antippen, um die Karte zu bewegen' });
+  await hint.click();
+  await expect(hint).toHaveCount(0);
+});
+
+test('Externes Foto fällt aus → Ersatzbild statt kaputtem Bild', async ({ page }) => {
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+  await mockExternal(page);
+  await page.route(/images\.unsplash\.com/, (r) => r.fulfill({ status: 404, body: '' }));
+  await page.goto('/');
+  const first = page.locator('[data-slide] img').first();
+  await expect(first).toHaveAttribute('data-fallback', 'done');
+  await expect.poll(() => first.evaluate((i) => i.naturalWidth)).toBeGreaterThan(0);
+});
+
+test('Bildnachweis im Impressum', async ({ page }) => {
+  await page.goto('/impressum');
+  await expect(page.getByRole('heading', { name: 'Bildnachweis' })).toBeVisible();
+  expect(await page.locator('.credits li').count()).toBeGreaterThan(15);
 });

@@ -13,10 +13,19 @@ Frontend
 - CSS (Custom Properties, Grid, Flexbox, color-mix, Dunkelmodus, prefers-reduced-motion)
 - Vanilla JavaScript (ES-Module, <dialog>-Lightbox, Lazy Loading)
 - Pannellum (360°-Panorama-Viewer, WebGL)
+- Leaflet (interaktive Karte, OpenStreetMap / OpenTopoMap, Kategorien-Filter)
+- Hero-Karussell (barrierefrei: Pause, Punkte, Wischen, reduzierte Bewegung)
+- Mobile-first CSS (min-width Breakpoints, wischbare Kartenreihen)
 - YouTube-Einbettung im Datenschutzmodus (youtube-nocookie.com, Laden erst beim Klick)
 - Schrift Inter (selbst gehostet, Variable Font)
 
+Daten & APIs
+- Open-Meteo Wetter-API (serverseitig, Cache, Ausfall-sicher)
+- GeoJSON, KML-/GPX-Import aus Google My Maps (@tmcw/togeojson, @xmldom/xmldom)
+- Google-Maps-Links für Navigation (ohne API-Schlüssel)
+
 Bilder
+- Unsplash-CDN (AVIF/WebP, responsive srcset, Ersatzbild bei Ausfall)
 - WebP mit responsive srcset
 - sharp (Node.js) zum Umwandeln eigener Fotos
 - Pillow (Python) zum Erzeugen der Platzhalter-Bilder

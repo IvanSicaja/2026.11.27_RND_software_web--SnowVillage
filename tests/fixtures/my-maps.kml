@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Steinbach</name>
+    <Folder>
+      <name>Wandern</name>
+      <Placemark>
+        <name>Höhenweg</name>
+        <description><![CDATA[Schöner Weg<br>mit <b>Aussicht</b>]]></description>
+        <LineString><coordinates>8.2,46.6,1450 8.21,46.605,1500 8.22,46.61,1600</coordinates></LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Bike-Touren</name>
+      <Placemark>
+        <name>Talrunde</name>
+        <LineString><coordinates>8.2,46.6 8.25,46.59</coordinates></LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Sehenswürdigkeiten</name>
+      <Placemark><name>Kirche</name><Point><coordinates>8.201,46.6004,0</coordinates></Point></Placemark>
+    </Folder>
+    <Folder>
+      <name>Sonstiges</name>
+      <Placemark><name>Parkplatz</name><Point><coordinates>8.19,46.6,0</coordinates></Point></Placemark>
+    </Folder>
+  </Document>
+</kml>

@@ -9,7 +9,11 @@ let base;
 const store = createContentStore(new URL('../../data', import.meta.url).pathname);
 
 before(async () => {
-  server = createApp({ siteUrl: 'https://steinbach.example' }).listen(0);
+  const weatherFetch = async () => ({
+    ok: true,
+    json: async () => ({ current: { temperature_2m: -2.4, apparent_temperature: -6, weather_code: 3, wind_speed_10m: 8, is_day: 1 }, daily: { temperature_2m_max: [1], temperature_2m_min: [-5] } }),
+  });
+  server = createApp({ siteUrl: 'https://steinbach.example', weatherFetch }).listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -25,7 +29,7 @@ for (const path of pages) {
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type'), /text\/html; charset=utf-8/);
     const body = await res.text();
-    assert.match(body, /^<!doctype html><html lang="de">/);
+    assert.match(body, /^<!doctype html><html lang="de"[ >]/);
     assert.match(body, /<title>[^<]+<\/title>/);
     assert.match(body, /<meta name="description" content="[^"]+">/);
     assert.match(body, /<link rel="canonical" href="https:\/\/steinbach\.example/);
@@ -105,7 +109,7 @@ test('Alle im HTML referenzierten lokalen Dateien existieren', async () => {
     const body = await (await get(path)).text();
     const refs = [...body.matchAll(/(?:src|href|data-image|data-preview)="(\/[^"#]*)"/g)].map((m) => m[1]);
     const srcsets = [...body.matchAll(/srcset="([^"]+)"/g)].flatMap((m) => m[1].split(',').map((s) => s.trim().split(' ')[0]));
-    for (const r of [...refs, ...srcsets]) seen.add(r.replace(/&amp;/g, '&'));
+    for (const r of [...refs, ...srcsets]) if (r.startsWith('/') && !r.startsWith('//')) seen.add(r.replace(/&amp;/g, '&'));
   }
   for (const u of seen) {
     const res = await get(u, { headers: { accept: '*/*' } });
@@ -121,6 +125,64 @@ test('sitemap.xml, robots.txt und RSS-Feed', async () => {
   const feed = await get('/blog/feed.xml');
   assert.match(feed.headers.get('content-type'), /rss\+xml/);
   assert.equal(((await feed.text()).match(/<item>/g) || []).length, store.articles.length);
+});
+
+test('Wetter-API liefert aufbereitete Daten', async () => {
+  const res = await get('/api/wetter');
+  assert.equal(res.status, 200);
+  const w = await res.json();
+  assert.equal(w.ok, true);
+  assert.equal(w.temperature, -2);
+  assert.equal(w.text, 'Bewölkt');
+  assert.equal(w.place, store.site.location.label);
+  assert.match(res.headers.get('cache-control'), /max-age=300/);
+});
+
+test('Wetter-API bei Ausfall: 503 statt Absturz', async () => {
+  const s2 = createApp({ weatherFetch: async () => { throw new Error('offline'); } }).listen(0);
+  await new Promise((r) => s2.once('listening', r));
+  const orig = console.warn;
+  console.warn = () => {};
+  try {
+    const res = await fetch(`http://127.0.0.1:${s2.address().port}/api/wetter`);
+    assert.equal(res.status, 503);
+    assert.deepEqual(await res.json(), { ok: false });
+  } finally {
+    console.warn = orig;
+    s2.close();
+  }
+});
+
+test('CSP erlaubt nur die nötigen externen Quellen', async () => {
+  const csp = (await get('/')).headers.get('content-security-policy');
+  assert.match(csp, /img-src [^;]*https:\/\/images\.unsplash\.com/);
+  assert.match(csp, /img-src [^;]*https:\/\/tile\.openstreetmap\.org/);
+  assert.match(csp, /img-src [^;]*https:\/\/\*\.tile\.opentopomap\.org/);
+  assert.match(csp, /frame-src [^;]*https:\/\/www\.google\.com/);
+  assert.doesNotMatch(csp, /script-src [^;]*https:/, 'keine externen Scripts');
+});
+
+test('Startseite: Karussell, Karte und Dorfleben sind enthalten', async () => {
+  const body = await (await get('/')).text();
+  assert.equal((body.match(/data-slide[\s>]/g) || []).length, store.site.hero.slides.length);
+  assert.match(body, /<script type="application\/json" data-map-data>/);
+  const json = JSON.parse(body.match(/data-map-data>([\s\S]*?)<\/script>/)[1]);
+  assert.equal(json.items.length, store.mapItems.length);
+  assert.ok(json.items.every((i) => i.google.startsWith('https://www.google.com/maps/')));
+  assert.match(body, /Dorfleben/);
+  // Unsplash-Bilder mit responsiven Grössen
+  assert.match(body, /images\.unsplash\.com\/photo-[\w-]+\?auto=format&amp;fit=crop&amp;w=480/);
+});
+
+test('Alle Fotos sind gültige Unsplash- oder lokale Pfade mit Bildnachweis', () => {
+  const remote = [
+    ...store.site.hero.slides.map((x) => x.src),
+    ...store.site.village.items.map((x) => x.src),
+    ...store.media.gallery.map((x) => x.src),
+    ...store.media.places.map((x) => x.image),
+  ];
+  for (const src of remote) assert.match(src, /^(https:\/\/images\.unsplash\.com\/photo-\d+-[0-9a-f]+|\/images\/[\w/-]+)$/, src);
+  for (const g of store.media.gallery) if (g.src.startsWith('https')) assert.ok(g.credit && g.creditUrl.startsWith('https://unsplash.com/photos/'), g.src);
 });
 
 test('Health-Check', async () => {

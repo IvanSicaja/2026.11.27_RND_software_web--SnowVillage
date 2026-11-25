@@ -1,0 +1,5 @@
+{
+  "//": "Markiert die Testdateien als ES-Module. Pakete kommen aus main/ (siehe main/scripts/link-tests.js).",
+  "private": true,
+  "type": "module"
+}

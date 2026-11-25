@@ -3,8 +3,10 @@ import { createApp } from './src/app.js';
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || '0.0.0.0';
-const server = createApp().listen(port, host, () => {
+const app = createApp();
+const server = app.listen(port, host, () => {
   console.log(`Website läuft auf http://localhost:${port}`);
+  app.locals.weather.get().catch(() => {}); // Wetter vorab laden
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

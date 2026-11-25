@@ -2,7 +2,7 @@
 title: Neu – das Dorf in 360°
 date: 2026-09-20
 excerpt: Auf unserer Website kann man sich jetzt vom Dorfplatz und von der Gipfelstation aus rundum umschauen.
-image: /images/gallery/bild-02
+image: https://images.unsplash.com/photo-1673257147506-76c1945d2bef
 category: Dorf
 ---
 

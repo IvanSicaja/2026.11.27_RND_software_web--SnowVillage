@@ -1,0 +1,10 @@
+import { chromium } from '@playwright/test';
+import { mockExternal } from './mocks.js';
+const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
+const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+await mockExternal(p);
+await p.goto('http://localhost:3123/', { waitUntil: 'networkidle' });
+await p.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 400) { scrollTo(0, y); await new Promise((r) => setTimeout(r, 100)); } });
+await p.waitForTimeout(1500);
+console.log(await p.evaluate(() => [...document.images].map((i) => `${i.complete ? 'C' : '-'} ${i.naturalWidth} ${i.dataset.fallback || ''} ${(i.currentSrc || i.src).slice(0, 90)}`).join('\n')));
+await b.close();

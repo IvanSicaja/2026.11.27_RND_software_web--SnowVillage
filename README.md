@@ -1,10 +1,10 @@
 # Steinbach – Website für ein Skidorf
 
-Minimalistisch, schnell und barrierefrei. Schwarz-Weiss mit ruhigen Naturtönen (Stein, Wasser, Holz, Metall), abgerundete Ecken, automatischer Dunkelmodus.
+Minimalistisch, schnell, barrierefrei und **mobile first**. Schwarz-Weiss mit ruhigen Naturtönen (Schnee, Stein, Wasser, Holz, Metall), abgerundete Ecken, automatischer Dunkelmodus.
 
-**Enthalten:** Startseite · Ausflugsziele · 360°-Panoramen · Bildergalerie mit Vollbild · YouTube-Videos · Blog/Aktuelles · Anreise & Kontakt · Impressum · 404-Seite · Sitemap · RSS-Feed
+**Enthalten:** Bilder-Karussell · Live-Temperatur · Karte mit Wander-, Lauf- und Velorouten und Aussichtspunkten · Dorfleben & Tradition · Ausflugsziele · 360°-Panoramen · Galerie mit Vollbild · YouTube-Videos · Blog · Anreise & Kontakt · Impressum mit Bildnachweis · Sitemap · RSS-Feed
 
-![Startseite](assets/01_media/02_figures/screenshot_startseite_desktop.png)
+<img src="assets/01_media/02_figures/screenshot_handy_startseite.png" width="260" alt="Startseite auf dem Handy"> <img src="assets/01_media/02_figures/screenshot_handy_karte.png" width="260" alt="Karte auf dem Handy">
 
 Welcher Ordner wofür ist: siehe [directory-structure-explained.md](directory-structure-explained.md).
 
@@ -33,9 +33,66 @@ Alles steht im Ordner `data/`:
 
 | Datei | Inhalt |
 |---|---|
-| `data/site.json` | Dorfname, Startseiten-Text, Zahlen, Kontakt, Öffnungszeiten, Anreise |
+| `data/site.json` | Dorfname, **Koordinaten (für Wetter & Karte)**, Karussell-Bilder, Texte, Zahlen, Dorfleben, Kontakt, Anreise |
 | `data/media.json` | 360°-Panoramen, Galerie, Videos, Ausflugsziele |
+| `data/karte.geojson` | Routen (Wandern, Laufen, Velo) und Aussichtspunkte für die Karte |
 | `data/articles/*.md` | Blog-Beiträge |
+
+### Zuerst: Koordinaten des Dorfes eintragen
+
+In Google Maps mit der rechten Maustaste auf den Dorfplatz klicken → die erste Zeile (z. B. `46.60012, 8.20034`) anklicken, sie wird kopiert.
+In `data/site.json` unter `location` eintragen:
+
+```json
+"location": { "lat": 46.60012, "lon": 8.20034, "label": "Steinbach" }
+```
+
+Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
+
+## Karte mit Routen – direkt aus Google Maps
+
+Die Website hat eine eigene, schnelle Karte mit vier Kategorien, die Besucher ein- und ausblenden können:
+**Wandern · Laufen · Velo · Aussicht & Sehenswertes**. Jede Route hat einen Knopf „In Google Maps öffnen“ –
+damit startet auf dem Handy direkt die Navigation zum Startpunkt.
+
+Ein Google-API-Schlüssel ist **nicht nötig** und es entstehen **keine Kosten**.
+
+### So kommen die Routen aus Google in die Website
+
+1. **[Google My Maps](https://www.google.com/maps/d/) öffnen** → „Neue Karte erstellen“.
+2. **Vier Ebenen anlegen** und genau so benennen: `Wandern`, `Laufen`, `Velo`, `Aussicht`
+   (auch „Wanderwege“, „Bike“, „Sehenswürdigkeiten“ usw. werden erkannt).
+3. In jeder Ebene **Linien zeichnen** (Routen) bzw. **Markierungen setzen** (Aussichtspunkte, Kirche, Fussballplatz …).
+   Name und Beschreibung eintragen – sie erscheinen später in der Website.
+   *Tipp:* Fertige Touren aus Komoot, Strava oder Garmin lassen sich als GPX in eine Ebene importieren.
+4. Menü **⋮ → „In KML/KMZ exportieren“** → Häkchen bei **„Als KML-Datei exportieren (statt KMZ)“** → Download.
+5. Im Ordner `main/`:
+
+   ```bash
+   npm run karte -- C:\Users\Name\Downloads\Steinbach.kml
+   ```
+
+   Fertig – Seite neu laden. Die alte Karte wird automatisch als `data/karte.backup.geojson` gesichert.
+
+Einzelne GPS-Touren direkt hinzufügen:
+
+```bash
+npm run karte -- morgenrunde.gpx --kategorie laufen --hinzufuegen
+```
+
+### Zusätzlich die Google-Karte selbst zeigen (optional)
+
+In Google My Maps: **Teilen** → „Jeder mit dem Link kann ansehen“. In der Adresse steht `mid=XXXXXXXX`.
+Diese Zeichen in `data/site.json` unter `map.googleMyMapsId` eintragen. Über der Karte erscheint dann der Umschalter
+**„Unsere Karte / Google Maps“**.
+
+## Live-Temperatur
+
+Die Temperatur kommt von [Open-Meteo](https://open-meteo.com) für die Koordinaten in `data/site.json`.
+Der Server fragt höchstens alle 10 Minuten ab und speichert das Ergebnis – die Website bleibt schnell, auch bei vielen Besuchern.
+Fällt der Wetterdienst aus, wird der Wetterbereich einfach ausgeblendet.
+
+> Open-Meteo ist für nicht-kommerzielle Nutzung kostenlos. Für eine offizielle Tourismus-Website ggf. ein günstiges [API-Abo](https://open-meteo.com/en/pricing) prüfen.
 
 ### Neuen Blog-Artikel schreiben
 
@@ -55,6 +112,15 @@ Hier steht der Text. **Fett**, Listen, [Links](/info) und ## Zwischentitel gehen
 
 Der Artikel erscheint sofort unter `/blog/weihnachtsmarkt` – kein Neustart nötig. Mit `draft: true` bleibt er unsichtbar.
 
+### Fotos
+
+Aktuell sind **Beispielfotos von Unsplash** eingebaut (Schnee, Bergsee, Holzhütten, Kirche, Advent, Akkordeon, Fussballplatz).
+Sie werden direkt vom Unsplash-CDN in passender Grösse geladen. Ein Foto ersetzen: in `data/site.json` bzw. `data/media.json`
+bei `src` / `image` eine andere Unsplash-Adresse (`https://images.unsplash.com/photo-…`) oder ein eigenes Foto eintragen.
+Lädt ein Foto nicht, zeigt die Website automatisch ein Ersatzbild. Bildnachweis: `copyright/bildnachweis.md`.
+
+Die **5 Bilder im Karussell** stehen in `data/site.json` unter `hero.slides`.
+
 ### Eigene Fotos
 
 1. Fotos in `data/fotos/galerie`, `data/fotos/orte` oder `data/fotos/blog` legen
@@ -72,8 +138,11 @@ In `data/media.json` unter `videos` die 11-stellige ID aus dem YouTube-Link eint
 
 ## Technik
 
-- **Node.js + Express 5**, serverseitig gerendert – kein Build-Schritt, sehr wenig JavaScript im Browser (≈ 6 KB)
+- **Node.js + Express 5**, serverseitig gerendert – kein Build-Schritt, sehr wenig JavaScript im Browser
+- **Mobile first**: Grundgestaltung fürs Handy, grössere Bildschirme werden ergänzt
+- **Leaflet** für die Karte (wird erst geladen, wenn man zur Karte scrollt), OpenStreetMap-Kartenbilder
 - **Pannellum** für 360° (wird erst beim Klick geladen)
+- Fotos über das **Unsplash-CDN** in AVIF/WebP, mit Ersatzbild bei Ausfall
 - YouTube im **Datenschutzmodus** (`youtube-nocookie.com`), lädt erst beim Abspielen
 - Schrift **Inter** vom eigenen Server, keine Cookies, kein Tracking
 - Sicherheits-Header (CSP, Helmet), Gzip-Kompression, langes Caching mit Versionierung
@@ -94,7 +163,8 @@ npm run test:e2e       # echte Browser, Desktop + Handy (Playwright + axe)
 
 Für die Browser-Tests einmalig `npx playwright install chromium` ausführen (oder Google Chrome installiert haben).
 
-Geprüft werden u. a.: alle Seiten und Artikel, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, 360°-Viewer inkl. Standortwechsel, Lightbox mit Tastatur, Video-Laden, 404, Funktion ohne JavaScript, Ladezeit.
+Geprüft werden u. a.: alle Seiten und Artikel, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
+Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch lokale Daten ersetzt – die Tests laufen auch ohne Internet.
 
 ## Platzhalter-Bilder neu erzeugen (optional, Python)
 

@@ -9,14 +9,16 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { createContentStore } from './content.js';
 import * as views from './views.js';
+import { createWeatherService } from './weather.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 
-export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = join(ROOT, 'public'), siteUrl } = {}) {
+export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = join(ROOT, 'public'), siteUrl, weatherFetch } = {}) {
   const app = express();
   const content = createContentStore(contentDir);
   const isProd = process.env.NODE_ENV === 'production';
+  const weather = createWeatherService({ getLocation: () => content.site.location, fetchImpl: weatherFetch });
 
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
@@ -60,24 +62,36 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
     site: content.site,
     media: content.media,
     articles: content.articles,
+    mapItems: content.mapItems,
     asset,
     imageVariants,
     siteUrl: (siteUrl || process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, ''),
   });
 
   /* --- Sicherheit --- */
-  app.use(
+  // Erlaubte Kartenserver werden aus data/site.json abgeleitet (map.tiles)
+  const tileHosts = () => {
+    const hosts = new Set();
+    for (const t of content.site.map?.tiles || []) {
+      try {
+        const u = new URL(t.url.replace('{s}', 'a').replace(/\{[a-z]\}/g, '0'));
+        hosts.add(t.url.includes('{s}') ? `${u.protocol}//*.${u.host.split('.').slice(1).join('.')}` : u.origin);
+      } catch { /* ungültige URL ignorieren */ }
+    }
+    return [...hosts];
+  };
+  const securityHeaders = (tiles) =>
     helmet({
       contentSecurityPolicy: {
         useDefaults: false,
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"], // Pannellum setzt Inline-Styles
-          imgSrc: ["'self'", 'data:', 'blob:', 'https://i.ytimg.com'],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Pannellum & Leaflet setzen Inline-Styles
+          imgSrc: ["'self'", 'data:', 'blob:', 'https://i.ytimg.com', 'https://images.unsplash.com', ...tiles],
           fontSrc: ["'self'"],
           connectSrc: ["'self'"],
-          frameSrc: ['https://www.youtube-nocookie.com'],
+          frameSrc: ['https://www.youtube-nocookie.com', 'https://www.google.com'],
           workerSrc: ["'self'", 'blob:'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
@@ -89,8 +103,14 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
       // YouTube braucht einen Referrer, sonst verweigert der Player die Wiedergabe
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
       hsts: isProd,
-    }),
-  );
+    });
+  let helmetCache = { key: '', mw: null };
+  app.use((req, res, next) => {
+    const tiles = tileHosts();
+    const key = tiles.join(' ');
+    if (helmetCache.key !== key || !helmetCache.mw) helmetCache = { key, mw: securityHeaders(tiles) };
+    helmetCache.mw(req, res, next);
+  });
   app.use(compression());
 
   /* --- Statische Dateien --- */
@@ -104,6 +124,8 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
   });
   const pannellumDir = join(dirname(require.resolve('pannellum/package.json')), 'build');
   const fontDir = join(dirname(require.resolve('@fontsource-variable/inter/package.json')), 'files');
+  const leafletDir = join(dirname(require.resolve('leaflet/package.json')), 'dist');
+  app.use('/vendor/leaflet', express.static(leafletDir, staticOpts('30d')));
   app.use('/vendor/pannellum', express.static(pannellumDir, staticOpts('30d')));
   app.use('/fonts', express.static(fontDir, staticOpts('365d')));
   app.use(express.static(publicDir, staticOpts(isProd ? '7d' : 0)));
@@ -132,6 +154,17 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
   app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${ctx(req).siteUrl}/sitemap.xml\n`));
   app.get('/healthz', (req, res) => res.json({ ok: true }));
 
+  // Aktuelles Wetter (vom Server zwischengespeichert)
+  app.get('/api/wetter', async (req, res, next) => {
+    try {
+      const result = await weather.get();
+      if (!result) return res.status(503).set('Cache-Control', 'no-store').json({ ok: false });
+      res.set('Cache-Control', 'public, max-age=300').json({ ok: true, fresh: result.fresh, place: content.site.location?.label || content.site.name, ...result.data });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // Abschliessende Schrägstriche entfernen (/galerie/ -> /galerie)
   app.use((req, res, next) => {
     if (req.method === 'GET' && req.path.length > 1 && req.path.endsWith('/')) {
@@ -157,6 +190,7 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
     }
   });
 
+  app.locals.weather = weather;
   return app;
 }
 

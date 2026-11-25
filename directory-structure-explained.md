@@ -19,7 +19,7 @@
 │   ├── 01_media/                                   # Medien
 │   │   │
 │   │   ├── 01_icons                                # Logo / Favicon als Quelldatei (logo.svg)
-│   │   ├── 02_figures                              # Screenshots der Website (Desktop, Handy, 360°, Galerie)
+│   │   ├── 02_figures                              # Screenshots der Website auf dem Handy (mit Testbildern)
 │   │   ├── 03_sounds                               # Audio (aktuell leer)
 │   │   ├── 04_videos                               # Eigene Rohvideos vor dem Hochladen auf YouTube (aktuell leer)
 │   │   └── 05_ads                                  # Werbematerial: Teilen-Vorschaubild für Social Media (1200×630)
@@ -27,11 +27,12 @@
 │
 ├── bills                                           # Rechnungen: Domain, Hosting, Fotograf usw. (aktuell leer)
 │
-├── copyright                                       # Lizenzen von Drittanbietern, Bild- und Videorechte
+├── copyright                                       # Lizenzen von Drittanbietern, Bildnachweis (bildnachweis.md)
 │
 ├── data                                            # INHALTE DER WEBSITE – hier wird bearbeitet, ohne zu programmieren
-│   ├── site.json                                   #   Dorfname, Texte, Zahlen, Kontakt, Öffnungszeiten, Anreise
+│   ├── site.json                                   #   Dorfname, Koordinaten, Karussell-Bilder, Texte, Dorfleben, Kontakt, Karten-Einstellungen
 │   ├── media.json                                  #   360°-Panoramen, Galerie, Videos, Ausflugsziele
+│   ├── karte.geojson                               #   Routen (Wandern, Laufen, Velo) + Aussichtspunkte → "npm run karte" aus Google My Maps
 │   ├── articles/                                   #   Blog-Artikel als Markdown (.md) – erscheinen sofort online
 │   └── fotos/                                      #   Eigene Original-Fotos (galerie/, orte/, blog/) → "npm run bilder"
 │
@@ -44,9 +45,9 @@
 ├── main                                            # QUELLCODE DER WEBSITE (Node.js)
 │   ├── server.js                                   #   Einstiegspunkt – startet die Website ("npm start")
 │   ├── package.json                                #   Node.js-Pakete und Befehle
-│   ├── src/                                        #   Server: Routen, Seiten-Vorlagen, Inhalte laden
+│   ├── src/                                        #   Server: Seiten-Vorlagen, Inhalte, Karte, Wetter, KML-Import
 │   ├── public/                                     #   Ausgelieferte Dateien: CSS, JavaScript, Bilder, Panoramen
-│   └── scripts/                                    #   Hilfsskripte: Fotos umwandeln, Platzhalter-Bilder erzeugen
+│   └── scripts/                                    #   Hilfsskripte: Karte importieren, Fotos umwandeln, Platzhalter-Bilder
 │
 ├── models/                                         # KI-Modelle (in diesem Projekt nicht verwendet)
 │   │
@@ -60,6 +61,8 @@
 ├── tests                                           # Automatische Tests
 │   ├── unit/                                       #   Server-, Inhalts- und Sicherheitstests (node:test)
 │   ├── e2e/                                        #   Browser-Tests Desktop + Handy, Barrierefreiheit (Playwright + axe)
+│   ├── fixtures/                                   #   Beispieldateien für Tests (KML aus Google My Maps, GPX)
+│   ├── package.json                                #   Markiert die Tests als ES-Module (Pakete kommen aus main/)
 │   └── playwright.config.js                        #   Einstellungen der Browser-Tests
 │
 └── viz/                                            # Visualisierungen
@@ -72,6 +75,9 @@
 
 | Ich möchte … | Datei / Ordner |
 |---|---|
+| Koordinaten des Dorfes (Wetter + Karte) | `data/site.json` → `location` |
+| Die 5 Bilder im Karussell ändern | `data/site.json` → `hero.slides` |
+| Routen & Aussichtspunkte ändern | Google My Maps → KML → in `main/`: `npm run karte -- datei.kml` |
 | Texte, Kontakt, Öffnungszeiten ändern | `data/site.json` |
 | Bilder, Videos, Panoramen, Ausflugsziele ändern | `data/media.json` |
 | Einen Blog-Artikel schreiben | neue `.md`-Datei in `data/articles/` |

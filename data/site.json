@@ -7,17 +7,62 @@
     "eyebrow": "1450 m ü. M. · Alpen",
     "title": "Stein, Wasser, Holz. Und viel Schnee.",
     "text": "Ein Dorf, das man nicht erklären muss. Breite Pisten am Morgen, stille Bergseen am Nachmittag und abends Licht in den Holzhäusern.",
-    "image": "/images/hero"
+    "image": "https://images.unsplash.com/photo-1780845162890-1d6a2cc8d507",
+    "slides": [
+      {
+        "src": "https://images.unsplash.com/photo-1780845162890-1d6a2cc8d507",
+        "alt": "Alpendorf mit Kirche vor bewaldeten Bergen",
+        "credit": "Arjun Raj",
+        "creditUrl": "https://unsplash.com/photos/4_N0kPJ5v6s"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1734550268358-018a08b0ea32",
+        "alt": "Skifahrer fahren im Sonnenlicht eine verschneite Piste hinunter",
+        "credit": "Greg Rosenke",
+        "creditUrl": "https://unsplash.com/photos/8NTwYJPGG_M"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1764253682608-95abf7015626",
+        "alt": "Verschneite Berge spiegeln sich in einem stillen Bergsee",
+        "credit": "Christopher Politano",
+        "creditUrl": "https://unsplash.com/photos/04gBRs76feg"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1515095182805-4367ad159fde",
+        "alt": "Beleuchtete Häuser eines Dorfes am Abend",
+        "credit": "Ezra Jeffrey-Comeau",
+        "creditUrl": "https://unsplash.com/photos/r4M6ZlaDLLU"
+      },
+      {
+        "src": "https://images.unsplash.com/photo-1677948846204-d024e93b6ccf",
+        "alt": "Fussballplatz zwischen Felsen und Meer aus der Luft",
+        "credit": "Jonas Schöne",
+        "creditUrl": "https://unsplash.com/photos/4W2CZ1hySZk"
+      }
+    ]
   },
   "facts": [
-    { "value": "1450–2600 m", "label": "Skigebiet" },
-    { "value": "85 km", "label": "Pisten" },
-    { "value": "14", "label": "Anlagen" },
-    { "value": "Dez–Apr", "label": "Wintersaison" }
+    {
+      "value": "1450–2600 m",
+      "label": "Skigebiet"
+    },
+    {
+      "value": "85 km",
+      "label": "Pisten"
+    },
+    {
+      "value": "14",
+      "label": "Anlagen"
+    },
+    {
+      "value": "Dez–Apr",
+      "label": "Wintersaison"
+    }
   ],
   "intro": {
     "title": "Willkommen in Steinbach",
-    "text": "Steinbach liegt am Ende eines stillen Tals, umgeben von Gipfeln über 3000 Metern. Im Winter führen die Bahnen direkt vom Dorf ins Skigebiet, im Sommer beginnen hier Wanderwege zu Bergseen, Schluchten und Alpen. Alles ist zu Fuss erreichbar – das Auto bleibt stehen."
+    "text": "Steinbach liegt am Ende eines stillen Tals, umgeben von Gipfeln über 3000 Metern. Im Winter führen die Bahnen direkt vom Dorf ins Skigebiet, im Sommer beginnen hier Wanderwege zu Bergseen, Schluchten und Alpen. Alles ist zu Fuss erreichbar – das Auto bleibt stehen.",
+    "weatherTitle": "Jetzt in Steinbach"
   },
   "contact": {
     "organisation": "Tourismusbüro Steinbach",
@@ -33,12 +78,84 @@
     ]
   },
   "arrival": [
-    { "title": "Mit Bahn & Bus", "text": "Stündlich mit dem Postauto ab dem Bahnhof im Tal, Fahrzeit rund 25 Minuten. Die Haltestelle liegt direkt am Dorfplatz." },
-    { "title": "Mit dem Auto", "text": "Über die Talstrasse bis zum Dorfeingang. Parkhaus mit 300 Plätzen, im Winter Schneeketten mitführen." },
-    { "title": "Im Dorf", "text": "Steinbach ist autofrei. Ortsbus und Skibus fahren gratis im 15-Minuten-Takt." }
+    {
+      "title": "Mit Bahn & Bus",
+      "text": "Stündlich mit dem Postauto ab dem Bahnhof im Tal, Fahrzeit rund 25 Minuten. Die Haltestelle liegt direkt am Dorfplatz."
+    },
+    {
+      "title": "Mit dem Auto",
+      "text": "Über die Talstrasse bis zum Dorfeingang. Parkhaus mit 300 Plätzen, im Winter Schneeketten mitführen."
+    },
+    {
+      "title": "Im Dorf",
+      "text": "Steinbach ist autofrei. Ortsbus und Skibus fahren gratis im 15-Minuten-Takt."
+    }
   ],
   "social": [
-    { "label": "Instagram", "url": "https://www.instagram.com/" },
-    { "label": "YouTube", "url": "https://www.youtube.com/" }
-  ]
+    {
+      "label": "Instagram",
+      "url": "https://www.instagram.com/"
+    },
+    {
+      "label": "YouTube",
+      "url": "https://www.youtube.com/"
+    }
+  ],
+  "location": {
+    "lat": 46.6,
+    "lon": 8.2,
+    "label": "Steinbach",
+    "hinweis": "Beispiel-Koordinaten – durch die echten Koordinaten des Dorfes ersetzen (in Google Maps: Rechtsklick auf den Ort → Zahlen anklicken)."
+  },
+  "village": {
+    "title": "Dorfleben & Tradition",
+    "text": "Hier kennt man sich. Sonntags läuten die Glocken, samstags spielt der FC auf dem Platz am Bach – und im Advent singt das ganze Dorf mit Akkordeon auf dem Dorfplatz.",
+    "items": [
+      {
+        "title": "Die Kirche",
+        "text": "Seit über 300 Jahren die Mitte des Dorfes.",
+        "src": "https://images.unsplash.com/photo-1766421320571-5227ae8fb986",
+        "alt": "Weisse Holzkirche mit hohem Turm im Schnee",
+        "credit": "Sijmen van Hooff",
+        "creditUrl": "https://unsplash.com/photos/DAtiNGSZJ9s"
+      },
+      {
+        "title": "Weihnachtssingen",
+        "text": "Akkordeon, Glühwein und Lieder, die jeder kennt.",
+        "src": "https://images.unsplash.com/photo-1543251537-f34961245d3f",
+        "alt": "Mann spielt Akkordeon",
+        "credit": "David Sarkisov",
+        "creditUrl": "https://unsplash.com/photos/Y-0wvnap864"
+      },
+      {
+        "title": "FC Steinbach",
+        "text": "Der Platz am Bach – mit dem schönsten Blick der Liga.",
+        "src": "https://images.unsplash.com/photo-1598871955824-3db4b5f9494d",
+        "alt": "Grüne Wiese vor bewaldeten Bergen unter Wolken",
+        "credit": "Tom Def",
+        "creditUrl": "https://unsplash.com/photos/a9qsM5Z1Sbg"
+      }
+    ]
+  },
+  "map": {
+    "title": "Karte: Wandern, Laufen, Velo & Aussicht",
+    "zoom": 13,
+    "googleMyMapsId": "",
+    "tiles": [
+      {
+        "name": "Karte",
+        "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
+        "maxZoom": 19,
+        "monochrome": true
+      },
+      {
+        "name": "Gelände",
+        "url": "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        "subdomains": "abc",
+        "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>, <a href=\"https://opentopomap.org\">OpenTopoMap</a> (CC-BY-SA)",
+        "maxZoom": 17
+      }
+    ]
+  }
 }

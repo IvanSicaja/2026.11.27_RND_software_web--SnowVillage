@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Morgenrunde</name><trkseg>
+    <trkpt lat="46.6" lon="8.2"><ele>1450</ele></trkpt>
+    <trkpt lat="46.601" lon="8.205"><ele>1452</ele></trkpt>
+    <trkpt lat="46.602" lon="8.21"><ele>1455</ele></trkpt>
+  </trkseg></trk>
+</gpx>

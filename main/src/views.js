@@ -1,5 +1,6 @@
 // Alle Seiten-Vorlagen. Reines JavaScript – kein Build-Schritt, sehr schnell.
 import { html, raw } from './html.js';
+import { CATEGORIES, googleMapsLink, startPoint } from './map.js';
 
 const NAV = [
   { href: '/ausflugsziele', label: 'Entdecken' },
@@ -24,6 +25,8 @@ export const icons = {
   prev: svg('<path d="M15 5l-7 7 7 7"/>', 22),
   next: svg('<path d="M9 5l7 7-7 7"/>', 22),
   menu: svg('<path d="M4 8h16M4 16h16"/>', 22),
+  pause: svg('<path d="M9 6v12M15 6v12"/>', 18),
+  playSmall: raw('<svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>'),
   rotate: svg('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>', 22),
   pin: svg('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', 18),
   clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 18),
@@ -33,10 +36,30 @@ export const icons = {
 };
 
 /* ---------- Bilder ---------- */
-// Erzeugt <img> mit srcset aus Varianten wie /images/x-600.webp, /images/x-1200.webp
-export function picture(imageVariants, base, { alt = '', sizes = '100vw', eager = false, cls = '', width, height } = {}) {
+// Fotos können lokal liegen (/images/x → x-600.webp, x-1200.webp …) oder von Unsplash kommen.
+// Unsplash liefert jede Grösse und das beste Format (AVIF/WebP) automatisch über sein CDN.
+const UNSPLASH = /^https:\/\/images\.unsplash\.com\/[\w-]+$/;
+export const isRemote = (src) => /^https?:\/\//.test(src || '');
+export function unsplash(src, width, ratio) {
+  const q = new URLSearchParams({ auto: 'format', fit: 'crop', w: String(width), q: '72' });
+  if (ratio) q.set('h', String(Math.round(width / ratio)));
+  return `${src}?${q}`;
+}
+const REMOTE_WIDTHS = [480, 800, 1200, 1600, 2000];
+export function variantsFor(imageVariants, base, { ratio, maxWidth = 2000 } = {}) {
+  if (UNSPLASH.test(base)) return REMOTE_WIDTHS.filter((w) => w <= maxWidth).map((w) => ({ width: w, url: unsplash(base, w, ratio) }));
+  return imageVariants(base);
+}
+/** Grösste verfügbare Version (für Lightbox, Teilen-Vorschau). */
+export function largest(imageVariants, base, ratio) {
+  if (UNSPLASH.test(base)) return unsplash(base, 2000, ratio);
+  return imageVariants(base).at(-1)?.url || base;
+}
+
+// Erzeugt <img> mit srcset
+export function picture(imageVariants, base, { alt = '', sizes = '100vw', eager = false, cls = '', width, height, ratio, maxWidth } = {}) {
   if (!base) return '';
-  const variants = imageVariants(base);
+  const variants = variantsFor(imageVariants, base, { ratio: ratio ?? (width && height ? width / height : undefined), maxWidth });
   let src = base;
   let srcset = '';
   if (variants.length) {
@@ -53,10 +76,10 @@ export function layout(ctx, { title, description, path, body, image, type = 'web
   const fullTitle = title ? `${title} · ${site.name}` : `${site.name} – ${site.tagline}`;
   const desc = description || site.description;
   const canonical = siteUrl + path;
-  const ogImage = siteUrl + (image || '/images/og-image.jpg');
+  const ogImage = isRemote(image) ? image : siteUrl + (image || '/images/og-image.jpg');
   const isActive = (href) => path === href || (href !== '/' && path.startsWith(href + '/'));
 
-  return `<!doctype html>${html`<html lang="${site.language || 'de'}">
+  return `<!doctype html>${html`<html lang="${site.language || 'de'}" data-karte="${asset('/js/karte.js')}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -187,20 +210,18 @@ function galleryGrid(ctx, items, { limit } = {}) {
   const list = limit ? items.slice(0, limit) : items;
   return html`
 <ul class="gallery" data-gallery>
-  ${list.map((g, i) => {
-    const variants = ctx.imageVariants(g.src);
-    const full = variants.length ? variants[variants.length - 1].url : g.src;
-    return html`<li>
-      <a class="gallery-item" href="${full}" data-gallery-item data-index="${i}" data-caption="${g.caption || ''}" data-alt="${g.alt}">
-        ${picture(ctx.imageVariants, g.src, { alt: g.alt, sizes: '(min-width: 1100px) 360px, (min-width: 700px) 45vw, 92vw', width: g.w, height: g.h })}
+  ${list.map((g, i) => html`<li>
+      <a class="gallery-item" href="${largest(ctx.imageVariants, g.src)}" data-gallery-item data-index="${i}" data-caption="${g.caption || ''}" data-alt="${g.alt}" data-credit="${g.credit ? `Foto: ${g.credit} / Unsplash` : ''}">
+        ${picture(ctx.imageVariants, g.src, { alt: g.alt, sizes: '(min-width: 1100px) 380px, (min-width: 640px) 46vw, 92vw', width: g.w, height: g.h, maxWidth: 1200 })}
       </a>
-    </li>`;
-  })}
+    </li>`)}
 </ul>`;
 }
 
-function videoCard(v, { large = false } = {}) {
-  const poster = v.poster || `https://i.ytimg.com/vi/${encodeURIComponent(v.youtubeId)}/hqdefault.jpg`;
+function videoCard(ctx, v, { large = false } = {}) {
+  const poster = v.poster
+    ? (isRemote(v.poster) ? unsplash(v.poster, large ? 1600 : 960, 16 / 9) : v.poster)
+    : `https://i.ytimg.com/vi/${encodeURIComponent(v.youtubeId)}/hqdefault.jpg`;
   return html`
 <article class="video-card${large ? ' video-card--large' : ''}">
   <div class="video" data-video="${v.youtubeId}" data-title="${v.title}">
@@ -219,11 +240,14 @@ function videoCard(v, { large = false } = {}) {
 function placeCard(ctx, p) {
   return html`
 <article class="card place-card" id="${p.id}">
-  <div class="card-media">${picture(ctx.imageVariants, p.image, { alt: p.title, sizes: '(min-width: 1100px) 280px, (min-width: 700px) 45vw, 92vw', width: 1200, height: 900 })}</div>
+  <div class="card-media">${picture(ctx.imageVariants, p.image, { alt: p.title, sizes: '(min-width: 1100px) 290px, (min-width: 640px) 46vw, 92vw', width: 1200, height: 900, maxWidth: 1200 })}</div>
   <div class="card-body">
     <p class="meta"><span class="tag tag--${p.kind.toLowerCase()}">${p.kind}</span><span>${p.distance}</span></p>
     <h3>${p.title}</h3>
     <p class="muted">${p.text}</p>
+    ${Number.isFinite(p.lat) && Number.isFinite(p.lon)
+      ? html`<a class="link-arrow link-small" href="${googleMapsLink([p.lon, p.lat])}" target="_blank" rel="noopener">Route in Google Maps ${icons.arrow}<span class="visually-hidden"> zu ${p.title}</span></a>`
+      : ''}
   </div>
 </article>`;
 }
@@ -231,7 +255,7 @@ function placeCard(ctx, p) {
 function articleCard(ctx, a) {
   return html`
 <article class="card article-card">
-  ${a.image ? html`<div class="card-media">${picture(ctx.imageVariants, a.image, { alt: '', sizes: '(min-width: 1100px) 360px, (min-width: 700px) 45vw, 92vw' })}</div>` : ''}
+  ${a.image ? html`<div class="card-media">${picture(ctx.imageVariants, a.image, { alt: '', sizes: '(min-width: 1100px) 380px, (min-width: 640px) 46vw, 92vw', ratio: 4 / 3, maxWidth: 1200 })}</div>` : ''}
   <div class="card-body">
     <p class="meta">${a.category ? html`<span class="tag">${a.category}</span>` : ''}<time datetime="${isoDate(a.date)}">${formatDate(a.date)}</time></p>
     <h3><a class="stretched" href="/blog/${a.slug}">${a.title}</a></h3>
@@ -240,14 +264,19 @@ function articleCard(ctx, a) {
 </article>`;
 }
 
-/* ---------- Seiten ---------- */
-export function homePage(ctx) {
-  const { site, media, articles } = ctx;
-  const latest = articles.slice(0, 3);
-  const body = html`
-<section class="hero container">
-  <div class="hero-media">
-    ${picture(ctx.imageVariants, site.hero.image, { alt: `Berge und Bergsee bei ${site.name}`, eager: true, width: 2400, height: 1400 })}
+/* ---------- Hero-Karussell ---------- */
+function heroCarousel(ctx) {
+  const { site } = ctx;
+  const slides = site.hero.slides?.length ? site.hero.slides : [{ src: site.hero.image, alt: `Landschaft bei ${site.name}` }];
+  return html`
+<section class="hero container" aria-label="Willkommen in ${site.name}">
+  <div class="hero-media carousel" data-carousel aria-roledescription="Karussell" aria-label="Bilder aus ${site.name}">
+    ${slides.map((sl, i) => html`
+    <div class="carousel-slide${i === 0 ? ' is-active' : ''}" role="group" aria-roledescription="Bild" aria-label="${i + 1} von ${slides.length}" data-slide${i === 0 ? '' : raw(' inert')}>
+      ${picture(ctx.imageVariants, sl.src, { alt: sl.alt || '', eager: i === 0, sizes: '100vw', maxWidth: 2000 })}
+      ${sl.credit ? html`<a class="slide-credit" href="${sl.creditUrl || 'https://unsplash.com'}" target="_blank" rel="noopener">Foto: ${sl.credit} / Unsplash</a>` : ''}
+    </div>`)}
+    <p class="weather-chip" data-weather-chip hidden></p>
   </div>
   <div class="hero-content">
     <p class="eyebrow eyebrow--light">${site.hero.eyebrow}</p>
@@ -258,7 +287,118 @@ export function homePage(ctx) {
       <a class="btn btn--ghost-light" href="/panorama">360° ansehen</a>
     </div>
   </div>
-</section>
+  ${slides.length > 1 ? html`
+  <div class="carousel-controls" data-carousel-controls>
+    <button class="carousel-toggle" type="button" data-carousel-toggle aria-label="Diashow anhalten">
+      <span class="i-pause">${icons.pause}</span><span class="i-play">${icons.playSmall}</span>
+    </button>
+    <div class="carousel-dots" role="group" aria-label="Bild auswählen">
+      ${slides.map((_, i) => html`<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="Bild ${i + 1} anzeigen"${i === 0 ? raw(' aria-current="true"') : ''}></button>`)}
+    </div>
+  </div>` : ''}
+</section>`;
+}
+
+/* ---------- Wetter ---------- */
+function weatherCard(ctx) {
+  const label = ctx.site.location?.label || ctx.site.name;
+  return html`
+<aside class="weather panel" data-weather hidden aria-label="Aktuelles Wetter in ${label}">
+  <p class="eyebrow">${ctx.site.intro.weatherTitle || `Jetzt in ${label}`}</p>
+  <div class="weather-main">
+    <span class="weather-icon" data-w-icon></span>
+    <span class="weather-temp" data-w-temp></span>
+  </div>
+  <p class="weather-text" data-w-text></p>
+  <dl class="weather-meta">
+    <div><dt>Heute</dt><dd data-w-range></dd></div>
+    <div><dt>Gefühlt</dt><dd data-w-feels></dd></div>
+    <div><dt>Wind</dt><dd data-w-wind></dd></div>
+  </dl>
+  <p class="weather-source">Live-Daten: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></p>
+</aside>`;
+}
+
+/* ---------- Karte ---------- */
+function mapBlock(ctx, { list = false } = {}) {
+  const { site, mapItems } = ctx;
+  const cfg = site.map || {};
+  const loc = site.location;
+  if (!loc || (!mapItems.length && !cfg.googleMyMapsId)) return '';
+  const counts = Object.fromEntries(CATEGORIES.map((c) => [c.id, mapItems.filter((m) => m.category === c.id).length]));
+  const cats = CATEGORIES.filter((c) => counts[c.id] > 0);
+  const data = {
+    center: [loc.lat, loc.lon],
+    zoom: cfg.zoom || 13,
+    tiles: (cfg.tiles || []).map((t) => ({ name: t.name, url: t.url, attribution: t.attribution, subdomains: t.subdomains, maxZoom: t.maxZoom, monochrome: !!t.monochrome })),
+    categories: cats,
+    items: mapItems.map((m) => ({ ...m, google: googleMapsLink(startPoint(m)) })),
+  };
+  const meta = (m) => [m.lengthKm ? `${String(m.lengthKm).replace('.', ',')} km` : '', m.duration, m.difficulty].filter(Boolean).join(' · ');
+  return html`
+<div class="map-block" data-map>
+  <div class="map-toolbar">
+    <div class="chips" role="group" aria-label="Auf der Karte anzeigen">
+      ${cats.map((c) => html`<button type="button" class="chip chip--cat" aria-pressed="true" data-map-filter="${c.id}">
+        <span class="swatch swatch--${c.id}" aria-hidden="true"></span>${c.label} <span class="chip-count">${counts[c.id]}</span></button>`)}
+    </div>
+    ${cfg.googleMyMapsId ? html`
+    <div class="seg" role="group" aria-label="Kartenansicht">
+      <button type="button" class="seg-btn" aria-pressed="true" data-map-view="own">Unsere Karte</button>
+      <button type="button" class="seg-btn" aria-pressed="false" data-map-view="google">Google Maps</button>
+    </div>` : ''}
+  </div>
+  <div class="map-stage">
+    <div class="map-canvas" data-map-canvas role="region" aria-label="Interaktive Karte mit Wander-, Lauf- und Velorouten sowie Aussichtspunkten">
+      <p class="map-placeholder">Karte wird geladen …<noscript> Für die Karte bitte JavaScript aktivieren.</noscript></p>
+    </div>
+    ${cfg.googleMyMapsId ? html`<div class="map-google" data-map-google data-src="https://www.google.com/maps/d/embed?mid=${encodeURIComponent(cfg.googleMyMapsId)}" hidden></div>` : ''}
+  </div>
+  ${list ? html`
+  <ul class="route-list" data-route-list>
+    ${mapItems.map((m) => html`<li class="route-item" data-route-item data-category="${m.category}">
+      <span class="swatch swatch--${m.category}" aria-hidden="true"></span>
+      <div class="route-body">
+        <h3>${m.name}</h3>
+        <p class="meta">${CATEGORIES.find((c) => c.id === m.category).label}${meta(m) ? html`<span>${meta(m)}</span>` : ''}</p>
+        ${m.description ? html`<p class="muted">${m.description}</p>` : ''}
+        <div class="route-actions">
+          <button type="button" class="btn btn--ghost btn--small" data-map-focus="${m.id}">Auf der Karte zeigen</button>
+          <a class="btn btn--ghost btn--small" href="${googleMapsLink(startPoint(m))}" target="_blank" rel="noopener">In Google Maps öffnen<span class="visually-hidden">: ${m.name}</span></a>
+        </div>
+      </div>
+    </li>`)}
+  </ul>` : ''}
+  ${raw(`<script type="application/json" data-map-data>${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`)}
+</div>`;
+}
+
+/* ---------- Dorfleben ---------- */
+function villageSection(ctx) {
+  const v = ctx.site.village;
+  if (!v?.items?.length) return '';
+  return html`
+<section class="container section">
+  ${sectionHead(v.title, '/galerie', 'Mehr Bilder', v.text)}
+  <div class="grid grid--3 grid--scroll" tabindex="0" role="region" aria-label="${v.title}">
+    ${v.items.map((it) => html`
+    <figure class="village-card">
+      ${picture(ctx.imageVariants, it.src, { alt: it.alt || '', sizes: '(min-width: 1100px) 380px, (min-width: 640px) 46vw, 92vw', width: 800, height: 1000, maxWidth: 1200 })}
+      <figcaption>
+        <h3>${it.title}</h3>
+        <p>${it.text}</p>
+      </figcaption>
+    </figure>`)}
+  </div>
+</section>`;
+}
+
+/* ---------- Seiten ---------- */
+export function homePage(ctx) {
+  const { site, media, articles } = ctx;
+  const latest = articles.slice(0, 3);
+  const body = html`
+${heroCarousel(ctx)}
 
 <section class="container facts" aria-label="Das Dorf in Zahlen">
   <dl class="facts-grid">
@@ -267,14 +407,22 @@ export function homePage(ctx) {
 </section>
 
 <section class="container section intro">
-  <h2>${site.intro.title}</h2>
-  <p class="lead">${site.intro.text}</p>
+  <div class="intro-grid">
+    <div>
+      <h2>${site.intro.title}</h2>
+      <p class="lead">${site.intro.text}</p>
+    </div>
+    ${weatherCard(ctx)}
+  </div>
 </section>
 
-<section class="container section">
-  ${sectionHead('In der Nähe', '/ausflugsziele', 'Alle Ausflugsziele')}
-  <div class="grid grid--4">${media.places.map((p) => placeCard(ctx, p))}</div>
+<section class="container section" id="in-der-naehe">
+  ${sectionHead('In der Nähe', '/ausflugsziele', 'Alle Routen & Ziele', 'Wandern, laufen, Velo fahren – und die schönsten Aussichtspunkte. Kategorien antippen zum Ein- und Ausblenden.')}
+  ${mapBlock(ctx)}
+  <div class="grid grid--4 grid--scroll mt" tabindex="0" role="region" aria-label="Ausflugsziele">${media.places.map((p) => placeCard(ctx, p))}</div>
 </section>
+
+${villageSection(ctx)}
 
 <section class="container section">
   ${sectionHead('360° Rundblick', '/panorama', 'Alle Panoramen', 'Mit Maus oder Finger in alle Richtungen drehen.')}
@@ -289,7 +437,7 @@ export function homePage(ctx) {
 ${media.videos.length ? html`
 <section class="container section">
   ${sectionHead('Videos', '/videos', 'Alle Videos')}
-  <div class="grid grid--2">${media.videos.slice(0, 2).map((v) => videoCard(v))}</div>
+  <div class="grid grid--2">${media.videos.slice(0, 2).map((v) => videoCard(ctx, v))}</div>
 </section>` : ''}
 
 ${latest.length ? html`
@@ -308,9 +456,11 @@ ${latest.length ? html`
   </div>
 </section>`;
 
+  const loc = site.location;
   return layout(ctx, {
     path: '/',
     body: body.value,
+    image: site.hero.slides?.[0] ? unsplash(site.hero.slides[0].src, 1200, 1200 / 630) : undefined,
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'TouristDestination',
@@ -319,17 +469,22 @@ ${latest.length ? html`
       url: ctx.siteUrl + '/',
       image: ctx.siteUrl + '/images/og-image.jpg',
       address: { '@type': 'PostalAddress', streetAddress: site.contact.street, addressLocality: site.contact.city, addressCountry: site.contact.country },
+      ...(loc ? { geo: { '@type': 'GeoCoordinates', latitude: loc.lat, longitude: loc.lon } } : {}),
     },
   });
 }
 
 export function placesPage(ctx) {
   const body = html`
-${pageHead('Entdecken', 'Ausflugsziele in der Nähe', 'Stein, Wasser, Holz und Metall – vier Orte, die man gesehen haben muss. Alle sind vom Dorf aus ohne Auto erreichbar.')}
+${pageHead('Entdecken', 'Routen & Ausflugsziele', 'Wanderwege, Laufrunden, Velotouren und Aussichtspunkte rund ums Dorf. Jede Route lässt sich direkt in Google Maps öffnen.')}
 <section class="container section section--tight">
+  ${mapBlock(ctx, { list: true })}
+</section>
+<section class="container section">
+  ${sectionHead('Vier Orte, die man gesehen haben muss', '', '', 'Stein, Wasser, Holz und Metall – alle ohne Auto erreichbar.')}
   <div class="grid grid--2">${ctx.media.places.map((p) => placeCard(ctx, p))}</div>
 </section>`;
-  return layout(ctx, { title: 'Ausflugsziele', path: '/ausflugsziele', body: body.value });
+  return layout(ctx, { title: 'Routen & Ausflugsziele', path: '/ausflugsziele', body: body.value });
 }
 
 export function panoramaPage(ctx) {
@@ -351,8 +506,8 @@ export function videosPage(ctx) {
   const body = html`
 ${pageHead('Videos', 'Steinbach in Bewegung', 'Die Videos werden erst beim Abspielen von YouTube geladen – im erweiterten Datenschutzmodus.')}
 <section class="container section section--tight">
-  ${first ? videoCard(first, { large: true }) : html`<p class="muted">Bald gibt es hier Videos.</p>`}
-  ${rest.length ? html`<div class="grid grid--2 mt">${rest.map((v) => videoCard(v))}</div>` : ''}
+  ${first ? videoCard(ctx, first, { large: true }) : html`<p class="muted">Bald gibt es hier Videos.</p>`}
+  ${rest.length ? html`<div class="grid grid--2 mt">${rest.map((v) => videoCard(ctx, v))}</div>` : ''}
 </section>`;
   return layout(ctx, { title: 'Videos', path: '/videos', body: body.value });
 }
@@ -379,7 +534,7 @@ export function articlePage(ctx, a) {
     <h1>${a.title}</h1>
     ${a.excerpt ? html`<p class="lead">${a.excerpt}</p>` : ''}
   </header>
-  ${a.image ? html`<div class="container article-cover">${picture(ctx.imageVariants, a.image, { alt: '', eager: true, sizes: '(min-width: 1100px) 1040px, 100vw' })}</div>` : ''}
+  ${a.image ? html`<div class="container article-cover">${picture(ctx.imageVariants, a.image, { alt: '', eager: true, sizes: '(min-width: 1240px) 1200px, 100vw', ratio: 2 })}</div>` : ''}
   <div class="container prose">${raw(a.html)}</div>
 </article>
 ${others.length ? html`
@@ -392,7 +547,7 @@ ${others.length ? html`
     description: a.excerpt,
     path: `/blog/${a.slug}`,
     type: 'article',
-    image: a.image ? (ctx.imageVariants(a.image).at(-1)?.url || a.image) : undefined,
+    image: a.image ? (isRemote(a.image) ? unsplash(a.image, 1200, 1200 / 630) : largest(ctx.imageVariants, a.image)) : undefined,
     body: body.value,
     jsonLd: {
       '@context': 'https://schema.org',
@@ -436,17 +591,37 @@ ${pageHead('Info', 'Anreise & Kontakt', 'Wir helfen gerne weiter – persönlich
   return layout(ctx, { title: 'Anreise & Kontakt', path: '/info', body: body.value });
 }
 
+export function photoCredits(ctx) {
+  const { site, media } = ctx;
+  const all = [
+    ...(site.hero.slides || []).map((x) => ({ ...x, label: x.alt })),
+    ...(site.village?.items || []).map((x) => ({ ...x, label: x.title })),
+    ...media.places.map((x) => ({ src: x.image, credit: x.credit, creditUrl: x.creditUrl, label: x.title })),
+    ...media.gallery.map((x) => ({ ...x, label: x.caption || x.alt })),
+  ];
+  const seen = new Set();
+  return all
+    .filter((x) => x.credit && x.creditUrl && !seen.has(x.src) && seen.add(x.src))
+    .map((x) => ({ label: x.label, credit: x.credit, url: x.creditUrl }));
+}
+
 export function impressumPage(ctx) {
   const c = ctx.site.contact;
+  const credits = photoCredits(ctx);
   const body = html`
 ${pageHead('', 'Impressum & Datenschutz')}
 <div class="container prose section--tight">
   <h2>Verantwortlich</h2>
   <p>${c.organisation}<br>${c.street}<br>${c.city}<br>${c.country}<br><a href="mailto:${c.email}">${c.email}</a></p>
   <h2>Datenschutz</h2>
-  <p>Diese Website setzt keine Cookies und verwendet keine Analyse- oder Tracking-Dienste. Schriften und Bilder werden von unserem eigenen Server geladen.</p>
+  <p>Diese Website setzt keine Cookies und verwendet keine Analyse- oder Tracking-Dienste. Schriften werden von unserem eigenen Server geladen.</p>
+  <p>Fotos werden über das Bildnetzwerk von Unsplash (images.unsplash.com) geladen, die Kartenbilder von OpenStreetMap bzw. OpenTopoMap. Dabei wird Ihre IP-Adresse an diese Dienste übertragen, damit die Bilder angezeigt werden können.</p>
+  <p>Die Wetterdaten fragt unser Server bei Open-Meteo ab. Ihr Browser verbindet sich dafür nicht mit dem Wetterdienst.</p>
   <p>Videos sind von YouTube eingebunden (erweiterter Datenschutzmodus, youtube-nocookie.com). Eine Verbindung zu YouTube wird erst hergestellt, wenn Sie ein Video aktiv abspielen. Es gelten dann die Datenschutzbestimmungen von Google.</p>
   <p>Beim Aufruf der Website speichert der Server technisch notwendige Protokolldaten (z.&nbsp;B. IP-Adresse, Zeitpunkt), die nach kurzer Zeit gelöscht werden.</p>
+  ${credits.length ? html`<h2>Bildnachweis</h2>
+  <p>Fotos von <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> (Unsplash-Lizenz):</p>
+  <ul class="credits">${credits.map((c) => html`<li>${c.label} – <a href="${c.url}" target="_blank" rel="noopener">${c.credit}</a></li>`)}</ul>` : ''}
 </div>`;
   return layout(ctx, { title: 'Impressum & Datenschutz', path: '/impressum', body: body.value });
 }
