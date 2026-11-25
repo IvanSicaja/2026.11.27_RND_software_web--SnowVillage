@@ -1,0 +1,86 @@
+{
+  "panoramas": [
+    {
+      "id": "dorfplatz",
+      "title": "Dorfplatz & Bergsee",
+      "text": "Rundblick vom Seeufer über das Dorf bis zu den Gipfeln.",
+      "image": "/images/panorama/panorama-1.jpg",
+      "preview": "/images/panorama/panorama-1-preview.webp"
+    },
+    {
+      "id": "gipfel",
+      "title": "Gipfelstation",
+      "text": "Auf 2600 m – der Blick über das ganze Skigebiet.",
+      "image": "/images/panorama/panorama-2.jpg",
+      "preview": "/images/panorama/panorama-2-preview.webp"
+    }
+  ],
+
+  "gallery": [
+    { "src": "/images/gallery/bild-01", "w": 1800, "h": 1200, "alt": "Bergkette mit verschneiten Gipfeln über dem Wald", "caption": "Morgens über dem Tal" },
+    { "src": "/images/gallery/bild-02", "w": 1800, "h": 1200, "alt": "Bergsee, in dem sich Wald und Gipfel spiegeln", "caption": "Der Bergsee im Winter" },
+    { "src": "/images/gallery/bild-03", "w": 1200, "h": 1500, "alt": "Steile Bergflanke mit Nadelwald", "caption": "Waldweg zur Alp" },
+    { "src": "/images/gallery/bild-04", "w": 1800, "h": 1200, "alt": "Nachthimmel mit Sternen über dunklen Bergen", "caption": "Sternennacht" },
+    { "src": "/images/gallery/bild-05", "w": 1800, "h": 1200, "alt": "Ruhiger See vor gestaffelten Bergrücken", "caption": "Abendstille am Wasser" },
+    { "src": "/images/gallery/bild-06", "w": 1200, "h": 1500, "alt": "Hohe Gipfel mit Schneefeldern", "caption": "Gipfel im Hochwinter" },
+    { "src": "/images/gallery/bild-07", "w": 1800, "h": 1200, "alt": "Bergrücken mit Tannen im Vordergrund", "caption": "Blick vom Skigebiet" },
+    { "src": "/images/gallery/bild-08", "w": 1800, "h": 1200, "alt": "Bergsee bei Nacht unter Sternen", "caption": "Der See bei Nacht" },
+    { "src": "/images/gallery/bild-09", "w": 1200, "h": 1500, "alt": "Bergkette im Hochformat mit Wald", "caption": "Aufstieg zur Hütte" }
+  ],
+
+  "videos": [
+    {
+      "youtubeId": "aqz-KE-bpKQ",
+      "title": "Ein Wintertag in Steinbach",
+      "text": "Vom ersten Lift bis zum Sonnenuntergang auf der Terrasse.",
+      "poster": "/images/gallery/bild-01-1800.webp"
+    },
+    {
+      "youtubeId": "aqz-KE-bpKQ",
+      "title": "Bergsee & Schlucht",
+      "text": "Die schönsten Wege rund ums Dorf.",
+      "poster": "/images/gallery/bild-05-1800.webp"
+    },
+    {
+      "youtubeId": "aqz-KE-bpKQ",
+      "title": "Pisten von oben",
+      "text": "Drohnenflug über das Skigebiet.",
+      "poster": "/images/gallery/bild-07-1800.webp"
+    }
+  ],
+
+  "places": [
+    {
+      "id": "bergsee",
+      "title": "Bergsee",
+      "distance": "20 Min. zu Fuss",
+      "kind": "Wasser",
+      "text": "Ein klarer See unter dem Gipfel. Im Winter gefroren und ideal für einen Spaziergang, im Sommer zum Baden.",
+      "image": "/images/places/ort-2"
+    },
+    {
+      "id": "schlucht",
+      "title": "Steinschlucht",
+      "distance": "45 Min. zu Fuss",
+      "kind": "Stein",
+      "text": "Ein gesicherter Steg führt durch die enge Felsschlucht – mit Wasserfällen und Eiszapfen im Winter.",
+      "image": "/images/places/ort-1"
+    },
+    {
+      "id": "alp",
+      "title": "Alte Alp",
+      "distance": "1 Std. Winterwanderung",
+      "kind": "Holz",
+      "text": "Eine Holzhütte aus dem 18. Jahrhundert mit Bergkäse, Suppe und Blick über das Tal.",
+      "image": "/images/places/ort-3"
+    },
+    {
+      "id": "gipfel",
+      "title": "Aussichtsgipfel",
+      "distance": "15 Min. mit der Bahn",
+      "kind": "Metall",
+      "text": "Die Hängebrücke aus Stahl auf 2600 m bietet einen Blick über 40 Viertausender.",
+      "image": "/images/places/ort-4"
+    }
+  ]
+}

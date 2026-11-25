@@ -1,0 +1,28 @@
+# Abhängigkeiten (werden mit "npm install" neu erzeugt)
+node_modules/
+tests/node_modules
+
+# Test-Ergebnisse
+tests/test-results/
+tests/playwright-report/
+test-results/
+playwright-report/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Geheimnisse & lokale Einstellungen
+.env
+.env.*
+
+# System-Dateien
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editoren
+.vscode/
+.idea/

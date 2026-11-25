@@ -1,0 +1,44 @@
+{
+  "name": "Steinbach",
+  "tagline": "Skidorf in den Alpen",
+  "description": "Steinbach – ein ruhiges Skidorf auf 1450 m ü. M. Pisten, Bergseen und Ausflugsziele, 360°-Panoramen, Bilder und Neuigkeiten aus dem Dorf.",
+  "language": "de",
+  "hero": {
+    "eyebrow": "1450 m ü. M. · Alpen",
+    "title": "Stein, Wasser, Holz. Und viel Schnee.",
+    "text": "Ein Dorf, das man nicht erklären muss. Breite Pisten am Morgen, stille Bergseen am Nachmittag und abends Licht in den Holzhäusern.",
+    "image": "/images/hero"
+  },
+  "facts": [
+    { "value": "1450–2600 m", "label": "Skigebiet" },
+    { "value": "85 km", "label": "Pisten" },
+    { "value": "14", "label": "Anlagen" },
+    { "value": "Dez–Apr", "label": "Wintersaison" }
+  ],
+  "intro": {
+    "title": "Willkommen in Steinbach",
+    "text": "Steinbach liegt am Ende eines stillen Tals, umgeben von Gipfeln über 3000 Metern. Im Winter führen die Bahnen direkt vom Dorf ins Skigebiet, im Sommer beginnen hier Wanderwege zu Bergseen, Schluchten und Alpen. Alles ist zu Fuss erreichbar – das Auto bleibt stehen."
+  },
+  "contact": {
+    "organisation": "Tourismusbüro Steinbach",
+    "street": "Dorfplatz 1",
+    "city": "1234 Steinbach",
+    "country": "Schweiz",
+    "phone": "+41 00 000 00 00",
+    "email": "info@steinbach.example",
+    "hours": [
+      "Mo–Fr: 08:30–12:00, 13:30–18:00",
+      "Sa: 09:00–12:00",
+      "Dezember bis April auch So: 09:00–12:00"
+    ]
+  },
+  "arrival": [
+    { "title": "Mit Bahn & Bus", "text": "Stündlich mit dem Postauto ab dem Bahnhof im Tal, Fahrzeit rund 25 Minuten. Die Haltestelle liegt direkt am Dorfplatz." },
+    { "title": "Mit dem Auto", "text": "Über die Talstrasse bis zum Dorfeingang. Parkhaus mit 300 Plätzen, im Winter Schneeketten mitführen." },
+    { "title": "Im Dorf", "text": "Steinbach ist autofrei. Ortsbus und Skibus fahren gratis im 15-Minuten-Takt." }
+  ],
+  "social": [
+    { "label": "Instagram", "url": "https://www.instagram.com/" },
+    { "label": "YouTube", "url": "https://www.youtube.com/" }
+  ]
+}

@@ -1,0 +1,34 @@
+VERWENDETE FÄHIGKEITEN & TECHNOLOGIEN
+=====================================
+
+Backend
+- Node.js (>= 20), ES-Module
+- Express 5 (Webserver, Routing, serverseitiges Rendern ohne Build-Schritt)
+- Helmet (Sicherheits-Header, Content-Security-Policy)
+- compression (Gzip)
+- marked (Markdown → HTML für Blog-Artikel)
+
+Frontend
+- HTML5, semantisches Markup, Barrierefreiheit (WCAG 2.1 AA, ARIA)
+- CSS (Custom Properties, Grid, Flexbox, color-mix, Dunkelmodus, prefers-reduced-motion)
+- Vanilla JavaScript (ES-Module, <dialog>-Lightbox, Lazy Loading)
+- Pannellum (360°-Panorama-Viewer, WebGL)
+- YouTube-Einbettung im Datenschutzmodus (youtube-nocookie.com, Laden erst beim Klick)
+- Schrift Inter (selbst gehostet, Variable Font)
+
+Bilder
+- WebP mit responsive srcset
+- sharp (Node.js) zum Umwandeln eigener Fotos
+- Pillow (Python) zum Erzeugen der Platzhalter-Bilder
+
+SEO
+- Open Graph, Canonical, sitemap.xml, robots.txt, RSS-Feed, JSON-LD (schema.org)
+
+Testen
+- node:test (Unit- und Servertests)
+- Playwright (Browser-Tests, Desktop + Handy)
+- axe-core (automatische Barrierefreiheits-Prüfung)
+
+Design
+- Minimalismus ("weniger ist mehr"), Schwarz-Weiss mit Naturtönen
+  (Stein, Wasser, Holz, Metall), abgerundete Ecken

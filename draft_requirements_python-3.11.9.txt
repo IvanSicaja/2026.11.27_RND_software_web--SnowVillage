@@ -1,0 +1,9 @@
+# Python-Abhängigkeiten (Python 3.11.9) – nur für Hilfsskripte, NICHT für die Website selbst.
+# Die Website läuft mit Node.js; ihre Pakete stehen in main/package.json.
+#
+# Verwendet von: main/scripts/platzhalter_bilder.py  (erzeugt die Platzhalter-Bilder)
+#
+# Installation:
+#   python -m pip install -r draft_requirements_python-3.11.9.txt
+
+Pillow>=11.0,<13
