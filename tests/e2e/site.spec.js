@@ -88,11 +88,15 @@ test('360°-Panorama startet, dreht und wechselt den Standort', async ({ page })
   await page.mouse.move(box.x + box.width / 2 - 200, box.y + box.height / 2, { steps: 8 });
   await page.mouse.up();
 
-  await page.getByRole('button', { name: 'Gipfelstation' }).click();
-  await expect(page.getByRole('button', { name: 'Gipfelstation' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-pano-caption]')).toContainText('2600');
+  await expect(page.locator('[data-pano-choice]')).toHaveCount(4);
+  const other = page.locator('[data-pano-choice][aria-pressed="false"]').first();
+  const season = (await other.textContent()).trim();
+  const text = await other.getAttribute('data-text');
+  await other.click();
+  await expect(page.getByRole('button', { name: season })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-pano-caption]')).toHaveText(text);
   await expect(viewer).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
-  await expect(viewer).toHaveAttribute('aria-label', /Gipfelstation/);
+  await expect(viewer).toHaveAttribute('aria-label', new RegExp(season));
   expect(errors).toEqual([]);
 });
 
@@ -236,6 +240,20 @@ test('Wetter: aktuelle Temperatur wird angezeigt', async ({ page }) => {
   await expect(card.locator('[data-w-text]')).toHaveText(WEATHER.text);
   await expect(card.locator('[data-w-range]')).toHaveText('−8° / −1°');
   await expect(card.locator('[data-w-wind]')).toHaveText('14 km/h');
+  // 7-Tage-Vorschau
+  const days = card.locator('[data-w-forecast] .forecast-day');
+  await expect(days).toHaveCount(7);
+  await expect(days.nth(0).locator('.forecast-name')).toContainText('Do');
+  await expect(days.nth(0).locator('.forecast-name')).toContainText('26.11.');
+  await expect(days.nth(3).locator('.forecast-precip')).toHaveText('14,7 cm');
+  await expect(days.nth(3).locator('.forecast-min')).toHaveText('−11°');
+  await expect(days.nth(6).locator('.forecast-max')).toHaveText('4°');
+  // Balken liegen innerhalb der Skala
+  for (const st of await days.locator('.forecast-bar span').evaluateAll((els) => els.map((e) => [parseFloat(e.style.left), parseFloat(e.style.right)]))) {
+    expect(st[0]).toBeGreaterThanOrEqual(0);
+    expect(st[1]).toBeGreaterThanOrEqual(0);
+    expect(st[0] + st[1]).toBeLessThan(100);
+  }
   await expect(page.locator('[data-weather-chip]')).toBeVisible();
   await expect(page.locator('[data-weather-chip]')).toContainText('−4°');
 });
@@ -315,4 +333,86 @@ test('Bildnachweis im Impressum', async ({ page }) => {
   await page.goto('/impressum');
   await expect(page.getByRole('heading', { name: 'Bildnachweis' })).toBeVisible();
   expect(await page.locator('.credits li').count()).toBeGreaterThan(15);
+});
+
+test('Startbild: Willkommen, Knöpfe, darunter die Bild-Steuerung; Slogan unter den Zahlen', async ({ page }) => {
+  await page.goto('/');
+  const hero = page.locator('.hero');
+  await expect(hero.locator('h1')).toHaveText('Willkommen in Steinbach');
+  const buttons = hero.locator('.actions');
+  const controls = hero.locator('[data-carousel-controls]');
+  await expect(controls).toBeVisible();
+  const b = await buttons.boundingBox();
+  const c = await controls.boundingBox();
+  expect(c.y).toBeGreaterThanOrEqual(b.y + b.height - 1); // Steuerung unter den Knöpfen
+  await expect(hero.locator('[data-weather-chip]')).toBeVisible();
+  await expect(hero.locator('.slide-credit').first()).toBeVisible();
+  // Slogan steht jetzt unter den Zahlen
+  const facts = await page.locator('.facts').boundingBox();
+  const slogan = page.getByRole('heading', { name: 'Stein, Wasser, Holz. Und viel Schnee.' });
+  await expect(slogan).toBeVisible();
+  expect((await slogan.boundingBox()).y).toBeGreaterThan(facts.y + facts.height);
+  await expect(hero).not.toContainText('Stein, Wasser, Holz');
+});
+
+/* ---------- Ganzes Menü: jeder Eintrag auf Handy und Desktop ---------- */
+const MENU = [
+  ['Entdecken', '/ausflugsziele', 'Routen & Ausflugsziele'],
+  ['360°', '/panorama', 'Rundblick durch das Jahr'],
+  ['Galerie', '/galerie', 'Bilder aus Steinbach'],
+  ['Videos', '/videos', 'Steinbach in Bewegung'],
+  ['Aktuelles', '/blog', 'Neuigkeiten aus dem Dorf'],
+  ['Anreise & Kontakt', '/info', 'Anreise & Kontakt'],
+];
+
+test('Menü: jeder Eintrag öffnet die richtige Seite und ist markiert', async ({ page, isMobile }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  for (const [label, path, heading] of MENU) {
+    if (isMobile) {
+      const toggle = page.getByRole('button', { name: 'Menü' });
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    }
+    const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
+    await nav.getByRole('link', { name: label, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`${path.replace('/', '\\/')}$`));
+    await expect(page.locator('h1')).toHaveText(heading);
+    await expect(page.locator(`[data-nav] a[href="${path}"]`)).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('[data-nav] a[aria-current="page"]')).toHaveCount(1);
+    if (isMobile) await expect(page.locator('[data-nav]')).not.toHaveClass(/is-open/); // Menü nach Seitenwechsel zu
+  }
+  // Logo führt zurück zur Startseite
+  await page.getByRole('link', { name: /Startseite/ }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('h1')).toHaveText('Willkommen in Steinbach');
+  expect(errors).toEqual([]);
+});
+
+test('Menü auf dem Handy: öffnen, schliessen per Escape, Klick daneben und Tastatur', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy');
+  await page.goto('/');
+  const toggle = page.getByRole('button', { name: 'Menü' });
+  const nav = page.locator('[data-nav]');
+  await toggle.click();
+  await expect(nav).toHaveClass(/is-open/);
+  await page.keyboard.press('Escape');
+  await expect(nav).not.toHaveClass(/is-open/);
+  await expect(toggle).toBeFocused();
+  await toggle.click();
+  await page.locator('main').click({ position: { x: 10, y: 400 } });
+  await expect(nav).not.toHaveClass(/is-open/);
+  await toggle.click();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('Footer-Links funktionieren alle', async ({ page }) => {
+  await page.goto('/');
+  const hrefs = await page.locator('.site-footer a[href^="/"]').evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
+  expect(hrefs.length).toBeGreaterThan(6);
+  for (const href of hrefs) {
+    const res = await page.request.get(href);
+    expect(res.status(), href).toBe(200);
+  }
 });

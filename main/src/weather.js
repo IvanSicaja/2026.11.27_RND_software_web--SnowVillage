@@ -48,30 +48,48 @@ export function buildWeatherUrl({ lat, lon }) {
     latitude: String(lat),
     longitude: String(lon),
     current: 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day',
-    daily: 'temperature_2m_max,temperature_2m_min',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,snowfall_sum',
     timezone: 'auto',
-    forecast_days: '1',
+    forecast_days: '8', // heute + 7 Tage
   });
   return `https://api.open-meteo.com/v1/forecast?${q}`;
 }
 
-/** Macht aus der Open-Meteo-Antwort ein kleines, stabiles Objekt. */
+/** Macht aus der Open-Meteo-Antwort ein kleines, stabiles Objekt (heute + bis zu 7 Folgetage). */
 export function parseWeather(json) {
   const c = json?.current;
   if (!c || !Number.isFinite(c.temperature_2m) || !Number.isFinite(c.weather_code)) throw new Error('Unerwartete Wetterdaten');
   const { text, icon } = describeWeather(c.weather_code);
   const num = (v) => (Number.isFinite(v) ? Math.round(v) : null);
+  const d = json.daily || {};
+  const days = (Array.isArray(d.time) ? d.time : [])
+    .map((date, i) => {
+      const code = d.weather_code?.[i];
+      const info = describeWeather(code);
+      return {
+        date,
+        code: Number.isFinite(code) ? code : null,
+        text: info.text,
+        icon: info.icon,
+        max: num(d.temperature_2m_max?.[i]),
+        min: num(d.temperature_2m_min?.[i]),
+        precip: num(d.precipitation_probability_max?.[i]),
+        snow: Number.isFinite(d.snowfall_sum?.[i]) ? Math.round(d.snowfall_sum[i] * 10) / 10 : null,
+      };
+    });
+  const valid = (day) => /^\d{4}-\d{2}-\d{2}$/.test(day.date) && day.max != null && day.min != null;
   return {
     temperature: num(c.temperature_2m),
     feelsLike: num(c.apparent_temperature),
     wind: num(c.wind_speed_10m),
-    max: num(json.daily?.temperature_2m_max?.[0]),
-    min: num(json.daily?.temperature_2m_min?.[0]),
+    max: num(d.temperature_2m_max?.[0]),
+    min: num(d.temperature_2m_min?.[0]),
     isDay: c.is_day !== 0,
     code: c.weather_code,
     text,
     icon,
     time: c.time || null,
+    forecast: days.slice(1, 8).filter(valid), // die nächsten 7 Tage
   };
 }
 

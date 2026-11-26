@@ -11,6 +11,15 @@ const tile = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQV
 export const WEATHER = {
   ok: true, fresh: true, place: 'Steinbach', temperature: -4, feelsLike: -9, wind: 14, max: -1, min: -8,
   isDay: true, code: 73, text: 'Schneefall', icon: 'snow', time: '2026-11-25T10:00',
+  forecast: [
+    { date: '2026-11-26', code: 3, text: 'Bewölkt', icon: 'cloud', max: 1, min: -6, precip: 20, snow: 0 },
+    { date: '2026-11-27', code: 0, text: 'Klar', icon: 'sun', max: 3, min: -5, precip: 0, snow: 0 },
+    { date: '2026-11-28', code: 71, text: 'Leichter Schneefall', icon: 'snow', max: -1, min: -8, precip: 70, snow: 3.1 },
+    { date: '2026-11-29', code: 75, text: 'Starker Schneefall', icon: 'snow', max: -4, min: -11, precip: 95, snow: 14.7 },
+    { date: '2026-11-30', code: 2, text: 'Teilweise bewölkt', icon: 'cloud-sun', max: 0, min: -9, precip: 10, snow: 0 },
+    { date: '2026-12-01', code: 45, text: 'Nebel', icon: 'fog', max: 2, min: -4, precip: 30, snow: 0 },
+    { date: '2026-12-02', code: 1, text: 'Überwiegend klar', icon: 'sun', max: 4, min: -3, precip: 5, snow: 0 },
+  ],
 };
 
 export async function mockExternal(page, { weather = WEATHER } = {}) {

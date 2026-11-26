@@ -23,7 +23,7 @@ Die vollständigen Lizenztexte liegen nach `npm install` in `main/node_modules/<
 ## Bilder, Videos, Texte, Karten, Wetter
 
 - Fotos: Unsplash-Lizenz – vollständige Liste in [bildnachweis.md](bildnachweis.md).
-- Die Bilder in `main/public/images/` (Panoramen, Ersatzbild) sind **selbst erzeugte Platzhalter** (frei verwendbar).
+- Die 360°-Panoramen (vier Jahreszeiten) und übrigen Bilder in `main/public/images/` sind **selbst gerenderte Illustrationen** (frei verwendbar, keine Fotos).
 - Die YouTube-Videos in `data/media.json` sind **Platzhalter** (Beispielfilm „Big Buck Bunny“, © Blender Foundation, CC BY 3.0).
 - Karten: © OpenStreetMap-Mitwirkende, OpenTopoMap. Wetter: Open-Meteo (CC BY 4.0).
 - Eigene Fotos und Videos: Urheber und Nutzungsrechte bitte in `copyright/` festhalten.

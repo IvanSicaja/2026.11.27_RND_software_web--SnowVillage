@@ -162,6 +162,28 @@ test('CSP erlaubt nur die nötigen externen Quellen', async () => {
   assert.doesNotMatch(csp, /script-src [^;]*https:/, 'keine externen Scripts');
 });
 
+test('Startseite: Willkommen im Bild, Text unter den Zahlen, Wetter mit 7 Tagen', async () => {
+  const body = await (await get('/')).text();
+  const h1 = body.match(/<h1>([^<]*)<\/h1>/)[1];
+  assert.equal(h1, store.site.intro.title);
+  const hero = body.slice(body.indexOf('class="hero '), body.indexOf('class="container facts"'));
+  assert.ok(hero.includes('data-carousel-controls'), 'Bild-Steuerung im Startbild');
+  assert.ok(hero.indexOf('360° ansehen') < hero.indexOf('data-carousel-controls'), 'Steuerung unter den Knöpfen');
+  assert.ok(!hero.includes(store.site.hero.title), 'Slogan nicht mehr im Startbild');
+  const afterFacts = body.slice(body.indexOf('class="container facts"'));
+  assert.ok(afterFacts.indexOf(store.site.hero.title) > 0, 'Slogan unter den Zahlen');
+  assert.ok(afterFacts.indexOf(store.site.hero.eyebrow) > 0);
+  assert.match(body, /data-w-forecast/);
+});
+
+test('360°: vier Jahreszeiten, aktuelle Jahreszeit vorausgewählt', async () => {
+  const body = await (await get('/panorama')).text();
+  const chips = [...body.matchAll(/data-pano-choice[^>]*>([^<]+)<\/button>/g)].map((m) => m[1]);
+  assert.deepEqual(chips, ['Winter', 'Frühling', 'Sommer', 'Herbst']);
+  const season = ['winter', 'winter', 'fruehling', 'fruehling', 'fruehling', 'sommer', 'sommer', 'sommer', 'herbst', 'herbst', 'herbst', 'winter'][new Date().getMonth()];
+  assert.match(body, new RegExp(`aria-pressed="true"\\s+data-pano-choice data-image="/images/panorama/jahreszeit-${season}\\.jpg"`));
+});
+
 test('Startseite: Karussell, Karte und Dorfleben sind enthalten', async () => {
   const body = await (await get('/')).text();
   assert.equal((body.match(/data-slide[\s>]/g) || []).length, store.site.hero.slides.length);

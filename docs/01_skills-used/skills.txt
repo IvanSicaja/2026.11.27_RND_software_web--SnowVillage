@@ -14,6 +14,8 @@ Frontend
 - Vanilla JavaScript (ES-Module, <dialog>-Lightbox, Lazy Loading)
 - Pannellum (360°-Panorama-Viewer, WebGL)
 - Leaflet (interaktive Karte, OpenStreetMap / OpenTopoMap, Kategorien-Filter)
+- Prozedurales Rendering (numpy): 360°-Panoramen in vier Jahreszeiten mit echter Perspektive
+- 7-Tage-Wettervorschau mit Temperaturbalken
 - Hero-Karussell (barrierefrei: Pause, Punkte, Wischen, reduzierte Bewegung)
 - Mobile-first CSS (min-width Breakpoints, wischbare Kartenreihen)
 - YouTube-Einbettung im Datenschutzmodus (youtube-nocookie.com, Laden erst beim Klick)

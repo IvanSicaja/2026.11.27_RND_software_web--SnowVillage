@@ -182,22 +182,27 @@ const sectionHead = (title, link, linkLabel, text) => html`
   ${link ? html`<a class="link-arrow" href="${link}">${linkLabel} ${icons.arrow}</a>` : ''}
 </div>`;
 
-function panoramaBlock(panoramas) {
+const SEASON_BY_MONTH = ['winter', 'winter', 'fruehling', 'fruehling', 'fruehling', 'sommer', 'sommer', 'sommer', 'herbst', 'herbst', 'herbst', 'winter'];
+export const currentSeason = (date = new Date()) => SEASON_BY_MONTH[date.getMonth()];
+
+function panoramaBlock(panoramas, now = new Date()) {
   if (!panoramas.length) return '';
-  const first = panoramas[0];
+  const season = currentSeason(now);
+  const start = Math.max(0, panoramas.findIndex((p) => p.season === season));
+  const first = panoramas[start];
   return html`
 <div class="pano" data-pano data-image="${first.image}" data-title="${first.title}">
   <div class="pano-stage">
     <div class="pano-viewer" data-pano-viewer role="region" aria-label="360°-Panorama: ${first.title}"></div>
     <button class="pano-start" type="button" data-pano-start>
-      <img src="${first.preview || first.image}" alt="" data-pano-preview width="800" height="400" loading="lazy" decoding="async">
+      <img src="${first.preview || first.image}" alt="" data-pano-preview width="1200" height="600" loading="lazy" decoding="async">
       <span class="pano-start-label">${icons.rotate}<span>360° Rundblick starten</span></span>
     </button>
   </div>
   <div class="pano-bar">
     ${panoramas.length > 1
-      ? html`<div class="chips" role="group" aria-label="Standort wählen">
-          ${panoramas.map((p, i) => html`<button type="button" class="chip" aria-pressed="${i === 0 ? 'true' : 'false'}"
+      ? html`<div class="chips" role="group" aria-label="Jahreszeit wählen">
+          ${panoramas.map((p, i) => html`<button type="button" class="chip" aria-pressed="${i === start ? 'true' : 'false'}"
             data-pano-choice data-image="${p.image}" data-preview="${p.preview || p.image}" data-title="${p.title}" data-text="${p.text || ''}">${p.title}</button>`)}
         </div>`
       : ''}
@@ -279,23 +284,21 @@ function heroCarousel(ctx) {
     <p class="weather-chip" data-weather-chip hidden></p>
   </div>
   <div class="hero-content">
-    <p class="eyebrow eyebrow--light">${site.hero.eyebrow}</p>
-    <h1>${site.hero.title}</h1>
-    <p class="hero-text">${site.hero.text}</p>
+    <h1>${site.intro.title}</h1>
     <div class="actions">
       <a class="btn btn--light" href="/ausflugsziele">Entdecken</a>
       <a class="btn btn--ghost-light" href="/panorama">360° ansehen</a>
     </div>
+    ${slides.length > 1 ? html`
+    <div class="carousel-controls" data-carousel-controls>
+      <button class="carousel-toggle" type="button" data-carousel-toggle aria-label="Diashow anhalten">
+        <span class="i-pause">${icons.pause}</span><span class="i-play">${icons.playSmall}</span>
+      </button>
+      <div class="carousel-dots" role="group" aria-label="Bild auswählen">
+        ${slides.map((_, i) => html`<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="Bild ${i + 1} anzeigen"${i === 0 ? raw(' aria-current="true"') : ''}></button>`)}
+      </div>
+    </div>` : ''}
   </div>
-  ${slides.length > 1 ? html`
-  <div class="carousel-controls" data-carousel-controls>
-    <button class="carousel-toggle" type="button" data-carousel-toggle aria-label="Diashow anhalten">
-      <span class="i-pause">${icons.pause}</span><span class="i-play">${icons.playSmall}</span>
-    </button>
-    <div class="carousel-dots" role="group" aria-label="Bild auswählen">
-      ${slides.map((_, i) => html`<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="Bild ${i + 1} anzeigen"${i === 0 ? raw(' aria-current="true"') : ''}></button>`)}
-    </div>
-  </div>` : ''}
 </section>`;
 }
 
@@ -303,18 +306,22 @@ function heroCarousel(ctx) {
 function weatherCard(ctx) {
   const label = ctx.site.location?.label || ctx.site.name;
   return html`
-<aside class="weather panel" data-weather hidden aria-label="Aktuelles Wetter in ${label}">
-  <p class="eyebrow">${ctx.site.intro.weatherTitle || `Jetzt in ${label}`}</p>
+<aside class="weather panel" data-weather hidden aria-label="Wetter in ${label}: heute und die nächsten 7 Tage">
+  <p class="eyebrow">${ctx.site.intro.weatherTitle || `Wetter in ${label}`}</p>
   <div class="weather-main">
     <span class="weather-icon" data-w-icon></span>
-    <span class="weather-temp" data-w-temp></span>
+    <div>
+      <span class="weather-temp" data-w-temp></span>
+      <p class="weather-text" data-w-text></p>
+    </div>
   </div>
-  <p class="weather-text" data-w-text></p>
   <dl class="weather-meta">
     <div><dt>Heute</dt><dd data-w-range></dd></div>
     <div><dt>Gefühlt</dt><dd data-w-feels></dd></div>
     <div><dt>Wind</dt><dd data-w-wind></dd></div>
   </dl>
+  <h3 class="weather-sub">Nächste 7 Tage</h3>
+  <ol class="forecast" data-w-forecast></ol>
   <p class="weather-source">Live-Daten: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></p>
 </aside>`;
 }
@@ -409,8 +416,10 @@ ${heroCarousel(ctx)}
 <section class="container section intro">
   <div class="intro-grid">
     <div>
-      <h2>${site.intro.title}</h2>
-      <p class="lead">${site.intro.text}</p>
+      <p class="eyebrow">${site.hero.eyebrow}</p>
+      <h2>${site.hero.title}</h2>
+      <p class="lead">${site.hero.text}</p>
+      <p class="intro-text">${site.intro.text}</p>
     </div>
     ${weatherCard(ctx)}
   </div>
@@ -425,7 +434,7 @@ ${heroCarousel(ctx)}
 ${villageSection(ctx)}
 
 <section class="container section">
-  ${sectionHead('360° Rundblick', '/panorama', 'Alle Panoramen', 'Mit Maus oder Finger in alle Richtungen drehen.')}
+  ${sectionHead('360° Rundblick', '/panorama', 'Vollbild & Details', 'Ein Ort, vier Jahreszeiten. Jahreszeit wählen und mit Maus oder Finger drehen.')}
   ${panoramaBlock(media.panoramas)}
 </section>
 
@@ -489,7 +498,7 @@ ${pageHead('Entdecken', 'Routen & Ausflugsziele', 'Wanderwege, Laufrunden, Velot
 
 export function panoramaPage(ctx) {
   const body = html`
-${pageHead('360°', 'Rundblick', 'Drehen Sie das Bild mit Maus, Finger oder Pfeiltasten. Mit dem Vollbild-Symbol oben links wird es noch eindrücklicher.')}
+${pageHead('360°', 'Rundblick durch das Jahr', 'Derselbe Ort in Winter, Frühling, Sommer und Herbst. Drehen Sie das Bild mit Maus, Finger oder Pfeiltasten – mit dem Vollbild-Symbol oben links wird es noch eindrücklicher.')}
 <section class="container section section--tight">${panoramaBlock(ctx.media.panoramas)}</section>`;
   return layout(ctx, { title: '360° Rundblick', path: '/panorama', body: body.value });
 }

@@ -52,7 +52,7 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.2
+v0.0.3
 
 ### TODOs / To Fix
 

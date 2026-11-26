@@ -286,6 +286,62 @@ const WEATHER_ICONS = {
 };
 const deg = (n) => (n == null ? '–' : `${n < 0 ? '−' : ''}${Math.abs(n)}°`);
 
+const dayFmt = new Intl.DateTimeFormat('de-CH', { weekday: 'short', timeZone: 'UTC' });
+const dateFmt = new Intl.DateTimeFormat('de-CH', { day: 'numeric', month: 'numeric', timeZone: 'UTC' });
+const smallIcon = (name) =>
+  `<svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WEATHER_ICONS[name] || WEATHER_ICONS.cloud}</svg>`;
+
+/** 7-Tage-Vorschau: Tag, Symbol, Niederschlag, Tiefst-/Höchstwert mit Balken */
+function renderForecast(list, days) {
+  if (!list) return;
+  list.textContent = '';
+  const sub = list.previousElementSibling;
+  if (!days.length) {
+    list.hidden = true;
+    if (sub) sub.hidden = true;
+    return;
+  }
+  const lo = Math.min(...days.map((d) => d.min));
+  const hi = Math.max(...days.map((d) => d.max));
+  const span = Math.max(1, hi - lo);
+  for (const d of days) {
+    const date = new Date(`${d.date}T00:00:00Z`);
+    const li = document.createElement('li');
+    li.className = 'forecast-day';
+    const name = document.createElement('span');
+    name.className = 'forecast-name';
+    name.textContent = dayFmt.format(date).replace('.', '');
+    const dt = document.createElement('span');
+    dt.className = 'forecast-date';
+    dt.textContent = dateFmt.format(date);
+    name.append(dt);
+    const icon = document.createElement('span');
+    icon.className = 'forecast-icon';
+    icon.innerHTML = smallIcon(d.icon);
+    icon.title = d.text;
+    const precip = document.createElement('span');
+    precip.className = 'forecast-precip';
+    precip.textContent = d.snow > 0 ? `${String(d.snow).replace('.', ',')} cm` : d.precip != null && d.precip >= 20 ? `${d.precip} %` : '';
+    const min = document.createElement('span');
+    min.className = 'forecast-min';
+    min.textContent = deg(d.min);
+    const bar = document.createElement('span');
+    bar.className = 'forecast-bar';
+    const fill = document.createElement('span');
+    fill.style.left = `${((d.min - lo) / span) * 100}%`;
+    fill.style.right = `${((hi - d.max) / span) * 100}%`;
+    bar.append(fill);
+    const max = document.createElement('span');
+    max.className = 'forecast-max';
+    max.textContent = deg(d.max);
+    const sr = document.createElement('span');
+    sr.className = 'visually-hidden';
+    sr.textContent = `${d.text}, ${deg(d.min)} bis ${deg(d.max)}${d.precip != null ? `, Niederschlag ${d.precip} %` : ''}`;
+    li.append(name, icon, precip, min, bar, max, sr);
+    list.append(li);
+  }
+}
+
 async function initWeather() {
   const card = $('[data-weather]');
   const chip = $('[data-weather-chip]');
@@ -303,6 +359,7 @@ async function initWeather() {
       $('[data-w-range]', card).textContent = `${deg(w.min)} / ${deg(w.max)}`;
       $('[data-w-feels]', card).textContent = deg(w.feelsLike);
       $('[data-w-wind]', card).textContent = w.wind == null ? '–' : `${w.wind} km/h`;
+      renderForecast($('[data-w-forecast]', card), w.forecast || []);
       card.hidden = false;
     }
     if (chip) {
@@ -312,7 +369,9 @@ async function initWeather() {
       const extra = document.createElement('span');
       extra.className = 'chip-extra';
       extra.textContent = ` · ${w.text} · ${w.place}`;
-      chip.append(temp, extra);
+      const label = document.createElement('span');
+      label.append(temp, extra);
+      chip.append(label);
       chip.setAttribute('aria-label', `Aktuell ${deg(w.temperature)}, ${w.text} in ${w.place}`);
       chip.hidden = false;
     }

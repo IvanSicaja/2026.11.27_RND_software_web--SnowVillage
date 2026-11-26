@@ -80,16 +80,35 @@ test('Unbekannte Kategorie wird abgelehnt', () => {
 /* ---------- Wetter ---------- */
 const sample = {
   current: { time: '2026-11-25T10:00', temperature_2m: -3.6, apparent_temperature: -8.2, weather_code: 73, wind_speed_10m: 12.4, is_day: 1 },
-  daily: { temperature_2m_max: [-0.6], temperature_2m_min: [-7.9] },
+  daily: {
+    time: ['2026-11-25', '2026-11-26', '2026-11-27', '2026-11-28', '2026-11-29', '2026-11-30', '2026-12-01', '2026-12-02'],
+    weather_code: [73, 3, 0, 71, 75, 2, 45, 1],
+    temperature_2m_max: [-0.6, 1.2, 3.4, -1, -3.6, 0, 2, 4],
+    temperature_2m_min: [-7.9, -6, -5, -8, -11.2, -9, -4, -3],
+    precipitation_probability_max: [90, 20, 0, 70, 95, 10, 30, 5],
+    snowfall_sum: [8.24, 0, 0, 3.1, 14.7, 0, 0, 0],
+  },
 };
 
 test('Wetterdaten werden verständlich aufbereitet', () => {
-  assert.deepEqual(parseWeather(sample), {
+  const w = parseWeather(sample);
+  const { forecast, ...today } = w;
+  assert.deepEqual(today, {
     temperature: -4, feelsLike: -8, wind: 12, max: -1, min: -8, isDay: true, code: 73, text: 'Schneefall', icon: 'snow', time: '2026-11-25T10:00',
   });
+  assert.equal(forecast.length, 7, 'genau 7 Folgetage');
+  assert.deepEqual(forecast[0], { date: '2026-11-26', code: 3, text: 'Bewölkt', icon: 'cloud', max: 1, min: -6, precip: 20, snow: 0 });
+  assert.deepEqual(forecast[3], { date: '2026-11-29', code: 75, text: 'Starker Schneefall', icon: 'snow', max: -4, min: -11, precip: 95, snow: 14.7 });
+  assert.equal(forecast[6].date, '2026-12-02');
+  // Fehlende Tageswerte → Tag wird ausgelassen, heute bleibt korrekt
+  const partial = parseWeather({ ...sample, daily: { ...sample.daily, temperature_2m_max: [-0.6, null, 3] } });
+  assert.equal(partial.max, -1);
+  assert.deepEqual(partial.forecast.map((d) => d.date), ['2026-11-27']);
+  assert.deepEqual(parseWeather({ current: sample.current }).forecast, []);
   assert.equal(describeWeather(999).text, 'Wetter');
   assert.throws(() => parseWeather({}), /Unerwartete/);
   assert.match(buildWeatherUrl({ lat: 46.6, lon: 8.2 }), /^https:\/\/api\.open-meteo\.com\/v1\/forecast\?latitude=46\.6&longitude=8\.2&current=/);
+  assert.match(buildWeatherUrl({ lat: 46.6, lon: 8.2 }), /forecast_days=8/);
 });
 
 test('Wetter wird zwischengespeichert und bei Ausfall weiter angezeigt', async () => {

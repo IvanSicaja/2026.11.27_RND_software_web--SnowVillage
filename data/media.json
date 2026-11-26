@@ -1,18 +1,36 @@
 {
   "panoramas": [
     {
-      "id": "dorfplatz",
-      "title": "Dorfplatz & Bergsee",
-      "text": "Rundblick vom Seeufer über das Dorf bis zu den Gipfeln.",
-      "image": "/images/panorama/panorama-1.jpg",
-      "preview": "/images/panorama/panorama-1-preview.webp"
+      "id": "winter",
+      "season": "winter",
+      "title": "Winter",
+      "text": "Verschneite Tannen, gefrorener Bergsee und Licht in den Holzhäusern.",
+      "image": "/images/panorama/jahreszeit-winter.jpg",
+      "preview": "/images/panorama/jahreszeit-winter-vorschau.webp"
     },
     {
-      "id": "gipfel",
-      "title": "Gipfelstation",
-      "text": "Auf 2600 m – der Blick über das ganze Skigebiet.",
-      "image": "/images/panorama/panorama-2.jpg",
-      "preview": "/images/panorama/panorama-2-preview.webp"
+      "id": "fruehling",
+      "season": "fruehling",
+      "title": "Frühling",
+      "text": "Blühende Bäume, Blumenwiesen und Schnee nur noch auf den Gipfeln.",
+      "image": "/images/panorama/jahreszeit-fruehling.jpg",
+      "preview": "/images/panorama/jahreszeit-fruehling-vorschau.webp"
+    },
+    {
+      "id": "sommer",
+      "season": "sommer",
+      "title": "Sommer",
+      "text": "Sattes Grün, klares Wasser zum Baden und lange Abende am See.",
+      "image": "/images/panorama/jahreszeit-sommer.jpg",
+      "preview": "/images/panorama/jahreszeit-sommer-vorschau.webp"
+    },
+    {
+      "id": "herbst",
+      "season": "herbst",
+      "title": "Herbst",
+      "text": "Goldene Lärchen, warmes Licht und der erste Schnee auf den Gipfeln.",
+      "image": "/images/panorama/jahreszeit-herbst.jpg",
+      "preview": "/images/panorama/jahreszeit-herbst-vorschau.webp"
     }
   ],
   "gallery": [
@@ -194,5 +212,6 @@
       "lat": 46.588,
       "lon": 8.224
     }
-  ]
+  ],
+  "panoramaNote": "Gerenderte Illustrationen (keine Fotos) – durch eigene 360°-Fotos ersetzen."
 }
