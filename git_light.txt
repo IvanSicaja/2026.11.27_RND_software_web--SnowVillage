@@ -52,21 +52,15 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.4
+v0.0.5
 
 ### TODOs / To Fix
 
 ### Fixed / Improved
 
 ### Added / New Features
-- changed carousel effect from zoom out to zoom in
-- added unique natural background sound for each carousel image
-- enlarged carousel navigation controls for better mobile usability
-- improved weather section with clear day min and max temperatures
-- made weather display more minimalist and intuitive
-- converted 360 Dorfleben and Sehenswürdigkeiten sections to horizontal scrollable rows
-- added more option at the end of each row for full overview
-- kept all existing functionality and ensured production level quality
+- disabled carousel navigation controls while scrolling down the page
+- re-enabled controls when returning to the top section
 
 ### Additional Comment
 

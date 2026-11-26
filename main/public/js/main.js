@@ -224,6 +224,8 @@ function initCarousel() {
   let userPaused = reducedMotion; // Bei "Bewegung reduzieren" startet die Diashow nicht von selbst
   let holds = 0; // Maus darüber / Fokus darin
   let ambience = null; // Naturklang (wird erst beim Einschalten geladen)
+  let offscreen = false; // Startbild aus dem Blick gescrollt
+  const isHidden = () => document.hidden || offscreen;
 
   const restartProgress = () => {
     dots.forEach((d) => d.classList.remove('is-running'));
@@ -274,7 +276,7 @@ function initCarousel() {
     clearInterval(timer);
     timer = null;
     controls.classList.toggle('is-holding', holds > 0);
-    if (!userPaused && holds === 0 && !document.hidden) timer = setInterval(() => go(index + 1), DELAY);
+    if (!userPaused && holds === 0 && !isHidden()) timer = setInterval(() => go(index + 1), DELAY);
     restartProgress();
   };
   const renderToggle = () => {
@@ -305,6 +307,7 @@ function initCarousel() {
         soundBtn.setAttribute('aria-busy', 'true');
         const { createAmbience } = await import(document.documentElement.dataset.klang || '/js/klang.js');
         ambience ??= createAmbience(root);
+        ambience.setHidden(isHidden());
         await ambience.enable(slides[index].dataset.sound);
       } else {
         await ambience?.disable();
@@ -326,11 +329,26 @@ function initCarousel() {
   hero.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && ((holds = Math.max(0, holds - 1)), start()));
   hero.addEventListener('focusin', () => (holds++, stop()));
   hero.addEventListener('focusout', () => ((holds = Math.max(0, holds - 1)), start()));
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stop();
+  // Pausieren, wenn der Tab im Hintergrund ist ODER man nach unten gescrollt hat –
+  // beim Zurückkommen geht Diashow und Klang genau dort weiter, wo sie angehalten haben.
+  const updateVisibility = () => {
+    root.dataset.inView = String(!offscreen);
+    if (isHidden()) stop();
     else start();
-    ambience?.setHidden(document.hidden);
-  });
+    ambience?.setHidden(isHidden());
+  };
+  document.addEventListener('visibilitychange', updateVisibility);
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(
+      ([entry]) => {
+        const next = !entry.isIntersecting;
+        if (next === offscreen) return;
+        offscreen = next;
+        updateVisibility();
+      },
+      { threshold: 0.35 }, // weniger als ~1/3 des Startbilds sichtbar → Pause
+    ).observe(root);
+  }
 
   // Wischen
   let x0 = null;
@@ -346,6 +364,7 @@ function initCarousel() {
   });
 
   go(0);
+  root.dataset.inView = 'true';
   renderToggle();
   start();
 }

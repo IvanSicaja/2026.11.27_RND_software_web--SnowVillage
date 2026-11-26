@@ -58,6 +58,8 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
   Pause/Start, ein Balken pro Bild zum Antippen (zeigt auch den Fortschritt) und der **Lautsprecher-Knopf**.
 - Jedes Bild hat einen **eigenen Naturklang** (Kirchenglocken & Vögel, Bergwind & Ski, Bergsee, Kaminfeuer, Meer & Möwen).
   Ton ist standardmässig aus; nach dem Einschalten wird beim Bildwechsel weich übergeblendet.
+- **Ruhe beim Lesen:** Scrollt man nach unten (Startbild nicht mehr sichtbar), pausieren Diashow und Klang weich.
+  Zurück oben geht beides genau dort weiter, wo es angehalten hat. Ebenso, wenn der Browser-Tab im Hintergrund ist.
   Details: `assets/01_media/03_sounds/naturklaenge.md`.
 
 ## Wischbare Reihen
@@ -194,7 +196,7 @@ npm run test:e2e       # echte Browser, Desktop + Handy (Playwright + axe)
 
 Für die Browser-Tests einmalig `npx playwright install chromium` ausführen (oder Google Chrome installiert haben).
 
-Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
+Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
 Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch lokale Daten ersetzt – die Tests laufen auch ohne Internet.
 
 ## Platzhalter-Bilder neu erzeugen (optional, Python)

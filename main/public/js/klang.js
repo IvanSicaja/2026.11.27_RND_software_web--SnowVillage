@@ -17,7 +17,30 @@ export function createAmbience(root) {
   const buffers = new Map();
   let current = null; // { src, gain, url }
   let enabled = false;
+  let hidden = false; // Startbild nicht sichtbar oder Tab im Hintergrund
   let seq = 0;
+  let suspendTimer = null;
+
+  // Weich leiser werden und anhalten – die Wiedergabe bleibt genau an dieser Stelle stehen
+  const pauseSoftly = () => {
+    clearTimeout(suspendTimer);
+    const now = ctx.currentTime;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setValueAtTime(master.gain.value, now);
+    master.gain.linearRampToValueAtTime(0, now + 0.5);
+    suspendTimer = setTimeout(() => hidden && ctx.state === 'running' && ctx.suspend(), 550);
+    root.dataset.soundState = 'paused';
+  };
+  // Dort weitermachen, wo angehalten wurde, und weich lauter werden
+  const resumeSoftly = async () => {
+    clearTimeout(suspendTimer);
+    if (ctx.state !== 'running') await ctx.resume();
+    const now = ctx.currentTime;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setValueAtTime(master.gain.value, now);
+    master.gain.linearRampToValueAtTime(VOLUME, now + 0.8);
+    if (current) root.dataset.soundState = 'playing';
+  };
 
   const load = (url) => {
     if (!buffers.has(url)) {
@@ -71,14 +94,16 @@ export function createAmbience(root) {
     fadeOut(current);
     current = { src, gain, url };
     root.dataset.soundSrc = url;
-    root.dataset.soundState = 'playing';
+    root.dataset.soundState = hidden ? 'paused' : 'playing';
   }
 
   return {
     async enable(url) {
       enabled = true;
       if (ctx.state !== 'running') await ctx.resume();
+      master.gain.value = VOLUME;
       await play(url);
+      if (hidden) pauseSoftly();
     },
     async disable() {
       enabled = false;
@@ -90,10 +115,15 @@ export function createAmbience(root) {
       setTimeout(() => !enabled && ctx.state === 'running' && ctx.suspend(), (FADE_OUT + 0.2) * 1000);
     },
     play,
-    setHidden(hidden) {
+    setHidden(value) {
+      if (hidden === value) return;
+      hidden = value;
       if (!enabled) return;
-      if (hidden) ctx.suspend();
-      else ctx.resume();
+      if (hidden) pauseSoftly();
+      else resumeSoftly();
+    },
+    get position() {
+      return ctx.currentTime; // für Tests: bleibt beim Pausieren stehen
     },
   };
 }

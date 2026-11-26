@@ -552,3 +552,46 @@ test('Handy: 360°-Reihe startet bei der ausgewählten Jahreszeit', async ({ pag
   expect(pb.x).toBeGreaterThanOrEqual(rb.x - 1);
   expect(pb.x + pb.width).toBeLessThanOrEqual(rb.x + rb.width + 1); // ganz sichtbar
 });
+
+/* ---------- Beim Runterscrollen pausieren, beim Hochscrollen weiter ---------- */
+test('Runterscrollen pausiert Diashow, Hochscrollen macht dort weiter', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  await page.mouse.move(0, 0);
+  await page.getByRole('button', { name: 'Bild 3 anzeigen' }).click();
+  await page.evaluate(() => document.activeElement.blur()); // Fokus aus dem Karussell
+  await page.mouse.move(0, 0); // Maus aus dem Bild (Maus darüber pausiert absichtlich)
+  await expect(carousel).toHaveAttribute('data-index', '2');
+  await expect(carousel).toHaveAttribute('data-in-view', 'true');
+
+  await page.locator('.site-footer').scrollIntoViewIfNeeded();
+  await expect(carousel).toHaveAttribute('data-in-view', 'false');
+  await page.clock.runFor(30_000);
+  await expect(carousel).toHaveAttribute('data-index', '2'); // kein Wechsel, solange unten
+
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(carousel).toHaveAttribute('data-in-view', 'true');
+  await expect(carousel).toHaveAttribute('data-index', '2'); // genau dort, wo es stand
+  await page.clock.runFor(6500);
+  await expect(carousel).toHaveAttribute('data-index', '3'); // läuft wieder
+});
+
+test('Runterscrollen pausiert den Naturklang, Hochscrollen spielt weiter', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  await page.getByRole('button', { name: 'Naturklang einschalten' }).click();
+  await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  const src = await carousel.getAttribute('data-sound-src');
+
+  await page.locator('.site-footer').scrollIntoViewIfNeeded();
+  await expect(carousel).toHaveAttribute('data-sound-state', 'paused');
+  // Knopf bleibt "an" – der Klang ist nur pausiert
+  await expect(page.locator('[data-carousel-sound]')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(carousel).toHaveAttribute('data-sound-state', 'playing');
+  await expect(carousel).toHaveAttribute('data-sound-src', src); // derselbe Klang, kein Neustart
+  expect(errors).toEqual([]);
+});
