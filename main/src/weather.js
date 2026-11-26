@@ -89,6 +89,7 @@ export function parseWeather(json) {
     text,
     icon,
     time: c.time || null,
+    today: days[0] && valid(days[0]) ? days[0] : null, // Tageswerte für heute
     forecast: days.slice(1, 8).filter(valid), // die nächsten 7 Tage
   };
 }

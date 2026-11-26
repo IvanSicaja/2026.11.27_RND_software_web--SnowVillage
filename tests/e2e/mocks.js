@@ -11,6 +11,7 @@ const tile = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQV
 export const WEATHER = {
   ok: true, fresh: true, place: 'Steinbach', temperature: -4, feelsLike: -9, wind: 14, max: -1, min: -8,
   isDay: true, code: 73, text: 'Schneefall', icon: 'snow', time: '2026-11-25T10:00',
+  today: { date: '2026-11-25', code: 73, text: 'Schneefall', icon: 'snow', max: -1, min: -8, precip: 90, snow: 8.2 },
   forecast: [
     { date: '2026-11-26', code: 3, text: 'Bewölkt', icon: 'cloud', max: 1, min: -6, precip: 20, snow: 0 },
     { date: '2026-11-27', code: 0, text: 'Klar', icon: 'sun', max: 3, min: -5, precip: 0, snow: 0 },

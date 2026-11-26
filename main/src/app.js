@@ -137,7 +137,8 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
 
   app.get('/', (req, res) => send(res, views.homePage(ctx(req))));
   app.get('/ausflugsziele', (req, res) => send(res, views.placesPage(ctx(req))));
-  app.get('/panorama', (req, res) => send(res, views.panoramaPage(ctx(req))));
+  app.get('/panorama', (req, res) => send(res, views.panoramaPage({ ...ctx(req), query: { ansicht: typeof req.query.ansicht === 'string' ? req.query.ansicht.slice(0, 40) : '' } })));
+  app.get('/dorfleben', (req, res) => send(res, views.villagePage(ctx(req))));
   app.get('/galerie', (req, res) => send(res, views.galleryPage(ctx(req))));
   app.get('/videos', (req, res) => send(res, views.videosPage(ctx(req))));
   app.get('/blog', (req, res) => send(res, views.blogPage(ctx(req))));

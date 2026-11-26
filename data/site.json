@@ -13,31 +13,41 @@
         "src": "https://images.unsplash.com/photo-1780845162890-1d6a2cc8d507",
         "alt": "Alpendorf mit Kirche vor bewaldeten Bergen",
         "credit": "Arjun Raj",
-        "creditUrl": "https://unsplash.com/photos/4_N0kPJ5v6s"
+        "creditUrl": "https://unsplash.com/photos/4_N0kPJ5v6s",
+        "sound": "/audio/kirche-voegel.mp3",
+        "soundLabel": "Ferne Kirchenglocken, Vogelgezwitscher und ein leiser Wind über dem Dorf"
       },
       {
         "src": "https://images.unsplash.com/photo-1734550268358-018a08b0ea32",
         "alt": "Skifahrer fahren im Sonnenlicht eine verschneite Piste hinunter",
         "credit": "Greg Rosenke",
-        "creditUrl": "https://unsplash.com/photos/8NTwYJPGG_M"
+        "creditUrl": "https://unsplash.com/photos/8NTwYJPGG_M",
+        "sound": "/audio/bergwind-piste.mp3",
+        "soundLabel": "Bergwind in sanften Böen und das Schwingen der Ski im Schnee"
       },
       {
         "src": "https://images.unsplash.com/photo-1764253682608-95abf7015626",
         "alt": "Verschneite Berge spiegeln sich in einem stillen Bergsee",
         "credit": "Christopher Politano",
-        "creditUrl": "https://unsplash.com/photos/04gBRs76feg"
+        "creditUrl": "https://unsplash.com/photos/04gBRs76feg",
+        "sound": "/audio/bergsee.mp3",
+        "soundLabel": "Wasser plätschert ans Ufer, einzelne Tropfen, ein Vogel in der Ferne"
       },
       {
         "src": "https://images.unsplash.com/photo-1515095182805-4367ad159fde",
         "alt": "Beleuchtete Häuser eines Dorfes am Abend",
         "credit": "Ezra Jeffrey-Comeau",
-        "creditUrl": "https://unsplash.com/photos/r4M6ZlaDLLU"
+        "creditUrl": "https://unsplash.com/photos/r4M6ZlaDLLU",
+        "sound": "/audio/kaminfeuer.mp3",
+        "soundLabel": "Knisterndes Kaminfeuer und das warme Rauschen der Flammen"
       },
       {
         "src": "https://images.unsplash.com/photo-1677948846204-d024e93b6ccf",
         "alt": "Fussballplatz zwischen Felsen und Meer aus der Luft",
         "credit": "Jonas Schöne",
-        "creditUrl": "https://unsplash.com/photos/4W2CZ1hySZk"
+        "creditUrl": "https://unsplash.com/photos/4W2CZ1hySZk",
+        "sound": "/audio/meer-moewen.mp3",
+        "soundLabel": "Wellen rollen an den Strand, Möwen rufen in der Ferne"
       }
     ]
   },
@@ -134,6 +144,30 @@
         "alt": "Grüne Wiese vor bewaldeten Bergen unter Wolken",
         "credit": "Tom Def",
         "creditUrl": "https://unsplash.com/photos/a9qsM5Z1Sbg"
+      },
+      {
+        "title": "Adventsmarkt",
+        "text": "Holzstände, Kerzenlicht und Punsch auf dem Dorfplatz.",
+        "src": "https://images.unsplash.com/photo-1765400122871-cfa40ca51ee6",
+        "alt": "Holzstand mit Weihnachtslichtern am Abend",
+        "credit": "Maksim Shutov",
+        "creditUrl": "https://unsplash.com/photos/rHnEjicRh8U"
+      },
+      {
+        "title": "Alte Holzhäuser",
+        "text": "Von Hand gebaut, seit Generationen bewohnt.",
+        "src": "https://images.unsplash.com/photo-1767454218314-0e880df06d88",
+        "alt": "Holzhütte in verschneiter Landschaft",
+        "credit": "Sijmen van Hooff",
+        "creditUrl": "https://unsplash.com/photos/JRQZP7X_-vk"
+      },
+      {
+        "title": "Musikverein",
+        "text": "Proben am Freitag – zuhören ist ausdrücklich erlaubt.",
+        "src": "https://images.unsplash.com/photo-1724101541309-578ff3bffd9a",
+        "alt": "Musiker spielt Akkordeon",
+        "credit": "Paula Morin",
+        "creditUrl": "https://unsplash.com/photos/9t_Fwg0TE1E"
       }
     ]
   },

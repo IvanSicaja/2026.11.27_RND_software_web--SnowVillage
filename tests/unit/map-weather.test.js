@@ -92,7 +92,8 @@ const sample = {
 
 test('Wetterdaten werden verständlich aufbereitet', () => {
   const w = parseWeather(sample);
-  const { forecast, ...today } = w;
+  const { forecast, today: todayDay, ...today } = w;
+  assert.deepEqual(todayDay, { date: '2026-11-25', code: 73, text: 'Schneefall', icon: 'snow', max: -1, min: -8, precip: 90, snow: 8.2 });
   assert.deepEqual(today, {
     temperature: -4, feelsLike: -8, wind: 12, max: -1, min: -8, isDay: true, code: 73, text: 'Schneefall', icon: 'snow', time: '2026-11-25T10:00',
   });
@@ -105,6 +106,7 @@ test('Wetterdaten werden verständlich aufbereitet', () => {
   assert.equal(partial.max, -1);
   assert.deepEqual(partial.forecast.map((d) => d.date), ['2026-11-27']);
   assert.deepEqual(parseWeather({ current: sample.current }).forecast, []);
+  assert.equal(parseWeather({ current: sample.current }).today, null);
   assert.equal(describeWeather(999).text, 'Wetter');
   assert.throws(() => parseWeather({}), /Unerwartete/);
   assert.match(buildWeatherUrl({ lat: 46.6, lon: 8.2 }), /^https:\/\/api\.open-meteo\.com\/v1\/forecast\?latitude=46\.6&longitude=8\.2&current=/);

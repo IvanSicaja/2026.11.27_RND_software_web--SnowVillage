@@ -3,6 +3,7 @@
 #
 # Verwendet von: main/scripts/platzhalter_bilder.py      (Platzhalter-Bilder)
 #                main/scripts/panorama_jahreszeiten.py  (360°-Panoramen Winter/Frühling/Sommer/Herbst)
+#                main/scripts/naturklaenge.py          (Naturklänge, zusätzlich ffmpeg nötig)
 #
 # Installation:
 #   python -m pip install -r draft_requirements_python-3.11.9.txt

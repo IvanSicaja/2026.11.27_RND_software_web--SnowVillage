@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mockExternal, WEATHER } from './mocks.js';
 
-const PAGES = ['/', '/ausflugsziele', '/panorama', '/galerie', '/videos', '/blog', '/blog/saisonstart', '/blog/weihnachtssingen', '/info', '/impressum'];
+const PAGES = ['/', '/ausflugsziele', '/panorama', '/galerie', '/videos', '/blog', '/dorfleben', '/blog/saisonstart', '/blog/weihnachtssingen', '/info', '/impressum'];
 
 // Externe Dienste (Fotos, Karte, YouTube, Wetter) im Test durch lokale Daten ersetzen
 test.beforeEach(async ({ page }) => {
@@ -240,22 +240,23 @@ test('Wetter: aktuelle Temperatur wird angezeigt', async ({ page }) => {
   await expect(card.locator('[data-w-text]')).toHaveText(WEATHER.text);
   await expect(card.locator('[data-w-range]')).toHaveText('−8° / −1°');
   await expect(card.locator('[data-w-wind]')).toHaveText('14 km/h');
-  // 7-Tage-Vorschau
-  const days = card.locator('[data-w-forecast] .forecast-day');
-  await expect(days).toHaveCount(7);
-  await expect(days.nth(0).locator('.forecast-name')).toContainText('Do');
-  await expect(days.nth(0).locator('.forecast-name')).toContainText('26.11.');
-  await expect(days.nth(3).locator('.forecast-precip')).toHaveText('14,7 cm');
-  await expect(days.nth(3).locator('.forecast-min')).toHaveText('−11°');
-  await expect(days.nth(6).locator('.forecast-max')).toHaveText('4°');
-  // Balken liegen innerhalb der Skala
-  for (const st of await days.locator('.forecast-bar span').evaluateAll((els) => els.map((e) => [parseFloat(e.style.left), parseFloat(e.style.right)]))) {
-    expect(st[0]).toBeGreaterThanOrEqual(0);
-    expect(st[1]).toBeGreaterThanOrEqual(0);
-    expect(st[0] + st[1]).toBeLessThan(100);
-  }
-  await expect(page.locator('[data-weather-chip]')).toBeVisible();
-  await expect(page.locator('[data-weather-chip]')).toContainText('−4°');
+  // Tabelle: heute + 7 Tage
+  const table = card.locator('table[data-w-forecast]');
+  await expect(table.locator('thead th')).toHaveText(['Tag', 'Wetter', 'Min.', 'Max.']);
+  const rows = table.locator('tbody tr');
+  await expect(rows).toHaveCount(8);
+  await expect(rows.nth(0).locator('th')).toContainText('Heute');
+  await expect(rows.nth(0).locator('.forecast-desc')).toHaveText('Schneefall');
+  await expect(rows.nth(0).locator('.forecast-precip')).toHaveText('Neuschnee 8,2 cm');
+  await expect(rows.nth(1).locator('th')).toContainText('Do');
+  await expect(rows.nth(1).locator('th')).toContainText('26.11.');
+  await expect(rows.nth(1).locator('.forecast-desc')).toHaveText('Bewölkt');
+  await expect(rows.nth(1).locator('.forecast-precip')).toHaveText('Niederschlag 20 %');
+  await expect(rows.nth(2).locator('.forecast-precip')).toHaveCount(0); // trocken → kein Hinweis
+  await expect(rows.nth(4).locator('.forecast-min')).toHaveText('−11°');
+  await expect(rows.nth(4).locator('.forecast-max')).toHaveText('−4°');
+  await expect(rows.nth(7).locator('.forecast-max')).toHaveText('4°');
+  await expect(card.locator('.forecast-bar')).toHaveCount(0); // keine unklaren Farbbalken mehr
 });
 
 test('Wetter: ohne Daten bleibt der Bereich unsichtbar, Seite funktioniert', async ({ page }) => {
@@ -365,6 +366,7 @@ const MENU = [
   ['Anreise & Kontakt', '/info', 'Anreise & Kontakt'],
 ];
 
+
 test('Menü: jeder Eintrag öffnet die richtige Seite und ist markiert', async ({ page, isMobile }) => {
   const errors = collectErrors(page);
   await page.goto('/');
@@ -415,4 +417,138 @@ test('Footer-Links funktionieren alle', async ({ page }) => {
     const res = await page.request.get(href);
     expect(res.status(), href).toBe(200);
   }
+});
+
+/* ---------- Karussell: Zoom, Steuerleiste, Naturklang ---------- */
+test('Karussell zoomt ins Bild hinein (nicht heraus)', async ({ page }) => {
+  await page.goto('/');
+  const img = page.locator('[data-slide].is-active img');
+  await expect(img).toBeVisible();
+  const scale = () => img.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+  const s1 = await scale();
+  await page.waitForTimeout(1500);
+  const s2 = await scale();
+  expect(s1).toBeGreaterThanOrEqual(1);
+  expect(s2).toBeGreaterThan(s1); // wird grösser = Zoom in
+  expect(s2).toBeLessThanOrEqual(1.1);
+});
+
+test('Steuerleiste: gross, mindestens 50 % der Bildbreite, unten im Bild', async ({ page, isMobile }) => {
+  await page.goto('/');
+  const media = await page.locator('.hero-media').boundingBox();
+  const bar = await page.locator('[data-carousel-controls]').boundingBox();
+  expect(bar.width / media.width).toBeGreaterThanOrEqual(isMobile ? 0.85 : 0.5);
+  expect(bar.y + bar.height).toBeLessThanOrEqual(media.y + media.height);
+  expect(bar.y).toBeGreaterThan(media.y + media.height / 2); // untere Hälfte
+  for (const el of await page.locator('[data-carousel-dot], [data-carousel-toggle], [data-carousel-sound]').all()) {
+    const b = await el.boundingBox();
+    expect(b.height, 'Tippfläche mindestens 44 px').toBeGreaterThanOrEqual(44);
+    expect(b.width).toBeGreaterThanOrEqual(44);
+  }
+  // Fortschritt: frühere Bilder gefüllt, aktuelles läuft
+  await page.getByRole('button', { name: 'Bild 3 anzeigen' }).click();
+  await expect(page.locator('[data-carousel-dot]').nth(0)).toHaveClass(/is-done/);
+  await expect(page.locator('[data-carousel-dot]').nth(1)).toHaveClass(/is-done/);
+  await expect(page.locator('[data-carousel-dot]').nth(3)).not.toHaveClass(/is-done/);
+});
+
+test('Naturklang: einschalten, Klang wechselt mit dem Bild, ausschalten', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  const btn = page.getByRole('button', { name: 'Naturklang einschalten' });
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  await btn.click();
+  await expect(page.getByRole('button', { name: 'Naturklang ausschalten' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  await expect(carousel).toHaveAttribute('data-sound-src', '/audio/kirche-voegel.mp3');
+  await expect(page.locator('[data-sound-caption]')).toContainText('Kirchenglocken');
+  // Bildwechsel → anderer Klang
+  await page.getByRole('button', { name: 'Bild 4 anzeigen' }).click();
+  await expect(carousel).toHaveAttribute('data-sound-src', '/audio/kaminfeuer.mp3', { timeout: 10_000 });
+  await expect(page.locator('[data-sound-caption]')).toContainText('Kaminfeuer');
+  const state = await page.evaluate(() => (window.AudioContext ? 'ok' : 'none'));
+  expect(state).toBe('ok');
+  // Aus
+  await page.getByRole('button', { name: 'Naturklang ausschalten' }).click();
+  await expect(carousel).toHaveAttribute('data-sound-state', 'off');
+  await expect(page.locator('[data-sound-caption]')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('Naturklang: Datei fehlt → verständlicher Hinweis, nichts stürzt ab', async ({ page }) => {
+  await page.route('**/audio/*.mp3', (r) => r.fulfill({ status: 404, body: '' }));
+  const jsErrors = [];
+  page.on('pageerror', (e) => jsErrors.push(e.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Naturklang einschalten' }).click();
+  await expect(page.locator('[data-sound-caption]')).toHaveText('Der Klang konnte nicht abgespielt werden.');
+  await expect(page.getByRole('button', { name: 'Naturklang einschalten' })).toHaveAttribute('aria-pressed', 'false');
+  expect(jsErrors).toEqual([]);
+});
+
+/* ---------- Wischbare Reihen ---------- */
+const ROWS = [
+  ['Ausflugsziele', '/ausflugsziele'],
+  ['Dorfleben & Tradition', '/dorfleben'],
+  ['360°-Ansicht wählen', '/panorama'],
+  ['Aktuelle Beiträge', '/blog'],
+];
+
+test('Handy: Reihen lassen sich wischen und enden mit "Alle ansehen"', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy');
+  await page.goto('/');
+  for (const [label, href] of ROWS) {
+    const row = page.getByRole('region', { name: label, exact: true });
+    await row.scrollIntoViewIfNeeded();
+    const info = await row.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth, flow: getComputedStyle(el).gridAutoFlow }));
+    expect(info.flow).toBe('column'); // eine Reihe
+    expect(info.sw).toBeGreaterThan(info.cw); // breiter als der Bildschirm → wischbar
+    await row.evaluate((el) => el.scrollTo({ left: el.scrollWidth, behavior: 'instant' }));
+    const more = row.locator('a.more-card');
+    await expect(more).toBeVisible();
+    await expect(more).toHaveAttribute('href', href);
+  }
+  // "Alle ansehen" öffnet die Übersicht
+  const row = page.getByRole('region', { name: 'Dorfleben & Tradition', exact: true });
+  await row.evaluate((el) => el.scrollTo({ left: el.scrollWidth, behavior: 'instant' }));
+  await row.locator('a.more-card').click();
+  await expect(page).toHaveURL(/\/dorfleben$/);
+  await expect(page.locator('.village-card')).toHaveCount(6);
+});
+
+test('Desktop: Reihen als Raster, "Alle ansehen"-Karten ausgeblendet', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'nur Desktop');
+  await page.goto('/');
+  for (const [label] of ROWS) {
+    const row = page.getByRole('region', { name: label, exact: true });
+    expect(await row.evaluate((el) => getComputedStyle(el).gridAutoFlow)).toBe('row');
+    await expect(row.locator('a.more-card')).toBeHidden();
+  }
+});
+
+test('360° auf der Startseite: Karte antippen wählt die Jahreszeit', async ({ page }) => {
+  await page.goto('/');
+  const cards = page.locator('.pano-cards [data-pano-choice]');
+  await expect(cards).toHaveCount(4);
+  const other = page.locator('.pano-cards [data-pano-choice][aria-pressed="false"]').first();
+  const name = await other.getAttribute('aria-label');
+  await other.scrollIntoViewIfNeeded();
+  await other.click();
+  await expect(page.locator(`.pano-cards [data-pano-choice][aria-label="${name}"]`)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.pano-cards [aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.locator('[data-pano-preview]').first()).toHaveAttribute('src', new RegExp(name === 'Frühling' ? 'fruehling' : name.toLowerCase()));
+});
+
+test('Handy: 360°-Reihe startet bei der ausgewählten Jahreszeit', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy');
+  await page.goto('/');
+  const row = page.locator('.pano-cards');
+  await row.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  const pressed = row.locator('[aria-pressed="true"]');
+  const rb = await row.boundingBox();
+  const pb = await pressed.boundingBox();
+  expect(pb.x).toBeGreaterThanOrEqual(rb.x - 1);
+  expect(pb.x + pb.width).toBeLessThanOrEqual(rb.x + rb.width + 1); // ganz sichtbar
 });

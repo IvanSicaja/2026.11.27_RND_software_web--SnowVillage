@@ -25,6 +25,8 @@ export const icons = {
   prev: svg('<path d="M15 5l-7 7 7 7"/>', 22),
   next: svg('<path d="M9 5l7 7-7 7"/>', 22),
   menu: svg('<path d="M4 8h16M4 16h16"/>', 22),
+  soundOff: svg('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>', 20),
+  soundOn: svg('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9a4.5 4.5 0 0 1 0 6M18.6 6.4a8.2 8.2 0 0 1 0 11.2"/>', 20),
   pause: svg('<path d="M9 6v12M15 6v12"/>', 18),
   playSmall: raw('<svg class="icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>'),
   rotate: svg('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>', 22),
@@ -79,7 +81,7 @@ export function layout(ctx, { title, description, path, body, image, type = 'web
   const ogImage = isRemote(image) ? image : siteUrl + (image || '/images/og-image.jpg');
   const isActive = (href) => path === href || (href !== '/' && path.startsWith(href + '/'));
 
-  return `<!doctype html>${html`<html lang="${site.language || 'de'}" data-karte="${asset('/js/karte.js')}">
+  return `<!doctype html>${html`<html lang="${site.language || 'de'}" data-karte="${asset('/js/karte.js')}" data-klang="${asset('/js/klang.js')}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -137,6 +139,7 @@ ${raw(body)}
       <h2 class="footer-title">Seiten</h2>
       <ul class="footer-links">
         ${NAV.map((n) => html`<li><a href="${n.href}">${n.label}</a></li>`)}
+        <li><a href="/dorfleben">Dorfleben</a></li>
       </ul>
     </div>
     <div>
@@ -185,11 +188,15 @@ const sectionHead = (title, link, linkLabel, text) => html`
 const SEASON_BY_MONTH = ['winter', 'winter', 'fruehling', 'fruehling', 'fruehling', 'sommer', 'sommer', 'sommer', 'herbst', 'herbst', 'herbst', 'winter'];
 export const currentSeason = (date = new Date()) => SEASON_BY_MONTH[date.getMonth()];
 
-function panoramaBlock(panoramas, now = new Date()) {
+function panoramaBlock(panoramas, { now = new Date(), limit, selected } = {}) {
   if (!panoramas.length) return '';
   const season = currentSeason(now);
-  const start = Math.max(0, panoramas.findIndex((p) => p.season === season));
+  let start = panoramas.findIndex((p) => p.id === selected);
+  if (start < 0) start = Math.max(0, panoramas.findIndex((p) => p.season === season));
   const first = panoramas[start];
+  // Ausgewähltes Panorama ist immer sichtbar, auch wenn die Liste gekürzt wird
+  let shown = limit ? panoramas.slice(0, limit) : panoramas;
+  if (!shown.includes(first)) shown = [...shown.slice(0, -1), first];
   return html`
 <div class="pano" data-pano data-image="${first.image}" data-title="${first.title}">
   <div class="pano-stage">
@@ -199,16 +206,33 @@ function panoramaBlock(panoramas, now = new Date()) {
       <span class="pano-start-label">${icons.rotate}<span>360° Rundblick starten</span></span>
     </button>
   </div>
-  <div class="pano-bar">
-    ${panoramas.length > 1
-      ? html`<div class="chips" role="group" aria-label="Jahreszeit wählen">
-          ${panoramas.map((p, i) => html`<button type="button" class="chip" aria-pressed="${i === start ? 'true' : 'false'}"
-            data-pano-choice data-image="${p.image}" data-preview="${p.preview || p.image}" data-title="${p.title}" data-text="${p.text || ''}">${p.title}</button>`)}
-        </div>`
-      : ''}
-    <p class="muted pano-caption" data-pano-caption aria-live="polite">${first.text || ''}</p>
-  </div>
+  <p class="muted pano-caption" data-pano-caption aria-live="polite">${first.text || ''}</p>
+  ${panoramas.length > 1 ? html`
+  ${scrollRow(
+    shown.map((p) => html`<button type="button" class="pano-card" aria-pressed="${p === first ? 'true' : 'false'}" aria-label="${p.title}"
+      data-pano-choice data-image="${p.image}" data-preview="${p.preview || p.image}" data-title="${p.title}" data-text="${p.text || ''}">
+      <img src="${p.preview || p.image}" alt="" width="1200" height="600" loading="lazy" decoding="async">
+      <span class="pano-card-title">${p.title}</span>
+    </button>`),
+    { label: '360°-Ansicht wählen', cols: 4, more: limit && panoramas.length > 0 ? { href: '/panorama', label: 'Alle 360°-Ansichten', count: panoramas.length } : null, cls: 'pano-cards' },
+  )}` : ''}
 </div>`;
+}
+
+/* ---------- Wischbare Reihe (Handy) mit "Alle ansehen" am Ende ---------- */
+function moreCard({ href, label, count }) {
+  return html`<a class="more-card" href="${href}">
+    <span class="more-card-icon">${icons.arrow}</span>
+    <span class="more-card-label">${label}</span>
+    ${count ? html`<span class="more-card-count">${count} insgesamt</span>` : ''}
+  </a>`;
+}
+
+function scrollRow(items, { label, cols = 3, more, cls = '' }) {
+  return html`<div class="grid grid--${cols} grid--scroll${cls ? ` ${cls}` : ''}" tabindex="0" role="region" aria-label="${label}" data-scroll-row>
+    ${items}
+    ${more ? moreCard(more) : ''}
+  </div>`;
 }
 
 function galleryGrid(ctx, items, { limit } = {}) {
@@ -277,7 +301,7 @@ function heroCarousel(ctx) {
 <section class="hero container" aria-label="Willkommen in ${site.name}">
   <div class="hero-media carousel" data-carousel aria-roledescription="Karussell" aria-label="Bilder aus ${site.name}">
     ${slides.map((sl, i) => html`
-    <div class="carousel-slide${i === 0 ? ' is-active' : ''}" role="group" aria-roledescription="Bild" aria-label="${i + 1} von ${slides.length}" data-slide${i === 0 ? '' : raw(' inert')}>
+    <div class="carousel-slide${i === 0 ? ' is-active' : ''}" role="group" aria-roledescription="Bild" aria-label="${i + 1} von ${slides.length}" data-slide${sl.sound ? html` data-sound="${sl.sound}" data-sound-label="${sl.soundLabel || ''}"` : ''}${i === 0 ? '' : raw(' inert')}>
       ${picture(ctx.imageVariants, sl.src, { alt: sl.alt || '', eager: i === 0, sizes: '100vw', maxWidth: 2000 })}
       ${sl.credit ? html`<a class="slide-credit" href="${sl.creditUrl || 'https://unsplash.com'}" target="_blank" rel="noopener">Foto: ${sl.credit} / Unsplash</a>` : ''}
     </div>`)}
@@ -291,13 +315,17 @@ function heroCarousel(ctx) {
     </div>
     ${slides.length > 1 ? html`
     <div class="carousel-controls" data-carousel-controls>
-      <button class="carousel-toggle" type="button" data-carousel-toggle aria-label="Diashow anhalten">
+      <button class="carousel-btn carousel-toggle" type="button" data-carousel-toggle aria-label="Diashow anhalten">
         <span class="i-pause">${icons.pause}</span><span class="i-play">${icons.playSmall}</span>
       </button>
       <div class="carousel-dots" role="group" aria-label="Bild auswählen">
-        ${slides.map((_, i) => html`<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="Bild ${i + 1} anzeigen"${i === 0 ? raw(' aria-current="true"') : ''}></button>`)}
+        ${slides.map((_, i) => html`<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="Bild ${i + 1} anzeigen"${i === 0 ? raw(' aria-current="true"') : ''}><span class="dot-bar"><span class="dot-fill"></span></span></button>`)}
       </div>
-    </div>` : ''}
+      ${slides.some((sl) => sl.sound) ? html`<button class="carousel-btn carousel-sound" type="button" data-carousel-sound aria-pressed="false" aria-label="Naturklang einschalten">
+        <span class="i-sound-off">${icons.soundOff}</span><span class="i-sound-on">${icons.soundOn}</span>
+      </button>` : ''}
+    </div>
+    <p class="sound-caption" data-sound-caption aria-live="polite" hidden></p>` : ''}
   </div>
 </section>`;
 }
@@ -320,8 +348,11 @@ function weatherCard(ctx) {
     <div><dt>Gefühlt</dt><dd data-w-feels></dd></div>
     <div><dt>Wind</dt><dd data-w-wind></dd></div>
   </dl>
-  <h3 class="weather-sub">Nächste 7 Tage</h3>
-  <ol class="forecast" data-w-forecast></ol>
+  <h3 class="weather-sub" id="forecast-title">Heute und die nächsten 7 Tage</h3>
+  <table class="forecast" data-w-forecast aria-labelledby="forecast-title">
+    <thead><tr><th scope="col">Tag</th><th scope="col">Wetter</th><th scope="col" class="num">Min.</th><th scope="col" class="num">Max.</th></tr></thead>
+    <tbody></tbody>
+  </table>
   <p class="weather-source">Live-Daten: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a></p>
 </aside>`;
 }
@@ -381,23 +412,40 @@ function mapBlock(ctx, { list = false } = {}) {
 }
 
 /* ---------- Dorfleben ---------- */
+function villageCard(ctx, it) {
+  return html`
+    <figure class="village-card">
+      ${picture(ctx.imageVariants, it.src, { alt: it.alt || '', sizes: '(min-width: 1100px) 380px, (min-width: 640px) 46vw, 80vw', width: 800, height: 1000, maxWidth: 1200 })}
+      <figcaption>
+        <h3>${it.title}</h3>
+        <p>${it.text}</p>
+      </figcaption>
+    </figure>`;
+}
+
+const HOME_LIMIT = 3;
+
 function villageSection(ctx) {
   const v = ctx.site.village;
   if (!v?.items?.length) return '';
   return html`
 <section class="container section">
-  ${sectionHead(v.title, '/galerie', 'Mehr Bilder', v.text)}
-  <div class="grid grid--3 grid--scroll" tabindex="0" role="region" aria-label="${v.title}">
-    ${v.items.map((it) => html`
-    <figure class="village-card">
-      ${picture(ctx.imageVariants, it.src, { alt: it.alt || '', sizes: '(min-width: 1100px) 380px, (min-width: 640px) 46vw, 92vw', width: 800, height: 1000, maxWidth: 1200 })}
-      <figcaption>
-        <h3>${it.title}</h3>
-        <p>${it.text}</p>
-      </figcaption>
-    </figure>`)}
-  </div>
+  ${sectionHead(v.title, '/dorfleben', 'Alles zum Dorfleben', v.text)}
+  ${scrollRow(v.items.slice(0, HOME_LIMIT).map((it) => villageCard(ctx, it)), {
+    label: v.title,
+    more: { href: '/dorfleben', label: 'Alles zum Dorfleben', count: v.items.length },
+  })}
 </section>`;
+}
+
+export function villagePage(ctx) {
+  const v = ctx.site.village;
+  const body = html`
+${pageHead('Dorfleben', v.title, v.text)}
+<section class="container section section--tight">
+  <div class="grid grid--3">${v.items.map((it) => villageCard(ctx, it))}</div>
+</section>`;
+  return layout(ctx, { title: v.title, path: '/dorfleben', body: body.value });
 }
 
 /* ---------- Seiten ---------- */
@@ -428,14 +476,14 @@ ${heroCarousel(ctx)}
 <section class="container section" id="in-der-naehe">
   ${sectionHead('In der Nähe', '/ausflugsziele', 'Alle Routen & Ziele', 'Wandern, laufen, Velo fahren – und die schönsten Aussichtspunkte. Kategorien antippen zum Ein- und Ausblenden.')}
   ${mapBlock(ctx)}
-  <div class="grid grid--4 grid--scroll mt" tabindex="0" role="region" aria-label="Ausflugsziele">${media.places.map((p) => placeCard(ctx, p))}</div>
+  <div class="mt">${scrollRow(media.places.map((p) => placeCard(ctx, p)), { label: 'Ausflugsziele', cols: 4, more: { href: '/ausflugsziele', label: 'Alle Routen & Ziele', count: media.places.length + ctx.mapItems.length } })}</div>
 </section>
 
 ${villageSection(ctx)}
 
 <section class="container section">
-  ${sectionHead('360° Rundblick', '/panorama', 'Vollbild & Details', 'Ein Ort, vier Jahreszeiten. Jahreszeit wählen und mit Maus oder Finger drehen.')}
-  ${panoramaBlock(media.panoramas)}
+  ${sectionHead('360° Rundblick', '/panorama', 'Alle 360°-Ansichten', 'Ein Ort, vier Jahreszeiten. Ansicht wählen und mit Maus oder Finger drehen.')}
+  ${panoramaBlock(media.panoramas, { limit: 4 })}
 </section>
 
 <section class="container section">
@@ -452,7 +500,7 @@ ${media.videos.length ? html`
 ${latest.length ? html`
 <section class="container section">
   ${sectionHead('Aktuelles', '/blog', 'Alle Beiträge')}
-  <div class="grid grid--3">${latest.map((a) => articleCard(ctx, a))}</div>
+  ${scrollRow(latest.map((a) => articleCard(ctx, a)), { label: 'Aktuelle Beiträge', more: { href: '/blog', label: 'Alle Beiträge', count: articles.length } })}
 </section>` : ''}
 
 <section class="container section">
@@ -499,7 +547,7 @@ ${pageHead('Entdecken', 'Routen & Ausflugsziele', 'Wanderwege, Laufrunden, Velot
 export function panoramaPage(ctx) {
   const body = html`
 ${pageHead('360°', 'Rundblick durch das Jahr', 'Derselbe Ort in Winter, Frühling, Sommer und Herbst. Drehen Sie das Bild mit Maus, Finger oder Pfeiltasten – mit dem Vollbild-Symbol oben links wird es noch eindrücklicher.')}
-<section class="container section section--tight">${panoramaBlock(ctx.media.panoramas)}</section>`;
+<section class="container section section--tight">${panoramaBlock(ctx.media.panoramas, { selected: ctx.query?.ansicht })}</section>`;
   return layout(ctx, { title: '360° Rundblick', path: '/panorama', body: body.value });
 }
 
@@ -651,7 +699,7 @@ export function errorPage(ctx, status) {
 const xmlEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function sitemapXml(ctx) {
-  const paths = ['/', ...NAV.map((n) => n.href), '/impressum', ...ctx.articles.map((a) => `/blog/${a.slug}`)];
+  const paths = ['/', ...NAV.map((n) => n.href), '/dorfleben', '/impressum', ...ctx.articles.map((a) => `/blog/${a.slug}`)];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths
     .map((p) => `  <url><loc>${xmlEsc(ctx.siteUrl + p)}</loc></url>`)
     .join('\n')}\n</urlset>\n`;

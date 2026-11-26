@@ -20,7 +20,7 @@
 │   │   │
 │   │   ├── 01_icons                                # Logo / Favicon als Quelldatei (logo.svg)
 │   │   ├── 02_figures                              # Screenshots (Handy, Wetter, 360°) + Übersicht der vier Jahreszeiten
-│   │   ├── 03_sounds                               # Audio (aktuell leer)
+│   │   ├── 03_sounds                               # Beschreibung der 5 Naturklänge + Spektrogramme (Dateien: main/public/audio)
 │   │   ├── 04_videos                               # Eigene Rohvideos vor dem Hochladen auf YouTube (aktuell leer)
 │   │   └── 05_ads                                  # Werbematerial: Teilen-Vorschaubild für Social Media (1200×630)
 │   └── 02_3d-modeling                              # 3D-Modelle (aktuell leer)
@@ -46,8 +46,8 @@
 │   ├── server.js                                   #   Einstiegspunkt – startet die Website ("npm start")
 │   ├── package.json                                #   Node.js-Pakete und Befehle
 │   ├── src/                                        #   Server: Seiten-Vorlagen, Inhalte, Karte, Wetter, KML-Import
-│   ├── public/                                     #   Ausgelieferte Dateien: CSS, JavaScript, Bilder, Panoramen
-│   └── scripts/                                    #   Hilfsskripte: Karte importieren, Fotos umwandeln, 360°-Jahreszeiten rendern
+│   ├── public/                                     #   Ausgelieferte Dateien: CSS, JavaScript, Bilder, Panoramen, audio/ (Naturklänge)
+│   └── scripts/                                    #   Hilfsskripte: Karte importieren, Fotos umwandeln, 360° rendern, Naturklänge erzeugen
 │
 ├── models/                                         # KI-Modelle (in diesem Projekt nicht verwendet)
 │   │
@@ -82,6 +82,8 @@
 | Bilder, Videos, Panoramen, Ausflugsziele ändern | `data/media.json` |
 | Einen Blog-Artikel schreiben | neue `.md`-Datei in `data/articles/` |
 | Eigene Fotos einbauen | `data/fotos/…` → in `main/` `npm run bilder` |
+| Naturklang eines Bildes ändern | `data/site.json` → `hero.slides[…].sound` / `soundLabel` |
+| Dorfleben-Einträge | `data/site.json` → `village.items` (Startseite zeigt 3, `/dorfleben` alle) |
 | Die 5 Bilder / Text im Startbild | `data/site.json` → `hero.slides`, `intro.title` (Überschrift im Bild) |
 | Eigenes 360°-Foto einbauen | JPG nach `main/public/images/panorama/` + Eintrag in `data/media.json` |
 | Farben, Abstände, Ecken ändern | `main/public/css/style.css` (oben, Abschnitt `:root`) |

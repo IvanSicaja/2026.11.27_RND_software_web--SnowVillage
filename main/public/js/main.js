@@ -107,6 +107,11 @@ function initPanoramas() {
 
     start?.addEventListener('click', create);
 
+    // Wischbare Reihe beginnt bei der ausgewählten Ansicht (z. B. aktuelle Jahreszeit)
+    const pressed = choices.find((b) => b.getAttribute('aria-pressed') === 'true');
+    const row = pressed?.closest('[data-scroll-row]');
+    if (row && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, pressed.offsetLeft - row.offsetLeft - 16);
+
     for (const btn of choices) {
       btn.addEventListener('click', () => {
         if (btn.getAttribute('aria-pressed') === 'true') return;
@@ -210,29 +215,67 @@ function initCarousel() {
   const dots = $$('[data-carousel-dot]', hero);
   const toggle = $('[data-carousel-toggle]', hero);
   const controls = $('[data-carousel-controls]', hero);
+  const soundBtn = $('[data-carousel-sound]', hero);
+  const caption = $('[data-sound-caption]', hero);
   const DELAY = 6000;
+  controls.style.setProperty('--slide-delay', `${DELAY}ms`);
   let index = 0;
   let timer = null;
   let userPaused = reducedMotion; // Bei "Bewegung reduzieren" startet die Diashow nicht von selbst
   let holds = 0; // Maus darüber / Fokus darin
+  let ambience = null; // Naturklang (wird erst beim Einschalten geladen)
+
+  const restartProgress = () => {
+    dots.forEach((d) => d.classList.remove('is-running'));
+    const cur = dots[index];
+    if (!cur || !timer) return;
+    void cur.offsetWidth; // Animation neu starten
+    cur.classList.add('is-running');
+  };
+  const renderCaption = () => {
+    if (!caption) return;
+    const on = soundBtn?.getAttribute('aria-pressed') === 'true';
+    caption.textContent = on ? slides[index].dataset.soundLabel || '' : '';
+    caption.hidden = !on || !caption.textContent;
+  };
 
   const go = (i) => {
+    const prev = slides[index];
     index = (i + slides.length) % slides.length;
     slides.forEach((sl, n) => {
       const active = n === index;
+      if (!active && sl === prev && sl.classList.contains('is-active')) {
+        // Ausblendendes Bild bleibt beim aktuellen Zoom stehen (kein Zurückspringen)
+        const img = $('img', sl);
+        if (img) {
+          img.style.transform = getComputedStyle(img).transform;
+          setTimeout(() => img.style.removeProperty('transform'), 1400);
+        }
+      }
       sl.classList.toggle('is-active', active);
       sl.inert = !active;
     });
-    dots.forEach((d, n) => (n === index ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
+    dots.forEach((d, n) => {
+      d.classList.toggle('is-done', n < index);
+      if (n === index) d.setAttribute('aria-current', 'true');
+      else d.removeAttribute('aria-current');
+    });
     root.dataset.index = String(index);
+    renderCaption();
+    ambience?.play(slides[index].dataset.sound);
   };
   const stop = () => {
     clearInterval(timer);
     timer = null;
+    controls.classList.toggle('is-holding', holds > 0);
+    restartProgress();
   };
   const start = () => {
-    stop();
+    clearInterval(timer);
+    timer = null;
+    controls.classList.toggle('is-holding', holds > 0);
     if (!userPaused && holds === 0 && !document.hidden) timer = setInterval(() => go(index + 1), DELAY);
+    restartProgress();
   };
   const renderToggle = () => {
     controls.classList.toggle('is-paused', userPaused);
@@ -250,11 +293,44 @@ function initCarousel() {
       start();
     }),
   );
+
+  // Naturklang an/aus – Browser erlauben Ton erst nach einem Klick, daher standardmässig aus
+  soundBtn?.addEventListener('click', async () => {
+    const on = soundBtn.getAttribute('aria-pressed') !== 'true';
+    soundBtn.setAttribute('aria-pressed', String(on));
+    soundBtn.setAttribute('aria-label', on ? 'Naturklang ausschalten' : 'Naturklang einschalten');
+    renderCaption();
+    try {
+      if (on) {
+        soundBtn.setAttribute('aria-busy', 'true');
+        const { createAmbience } = await import(document.documentElement.dataset.klang || '/js/klang.js');
+        ambience ??= createAmbience(root);
+        await ambience.enable(slides[index].dataset.sound);
+      } else {
+        await ambience?.disable();
+      }
+    } catch (err) {
+      console.warn(err);
+      soundBtn.setAttribute('aria-pressed', 'false');
+      soundBtn.setAttribute('aria-label', 'Naturklang einschalten');
+      if (caption) {
+        caption.textContent = 'Der Klang konnte nicht abgespielt werden.';
+        caption.hidden = false;
+      }
+    } finally {
+      soundBtn.removeAttribute('aria-busy');
+    }
+  });
+
   hero.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && (holds++, stop()));
   hero.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && ((holds = Math.max(0, holds - 1)), start()));
   hero.addEventListener('focusin', () => (holds++, stop()));
   hero.addEventListener('focusout', () => ((holds = Math.max(0, holds - 1)), start()));
-  document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else start();
+    ambience?.setHidden(document.hidden);
+  });
 
   // Wischen
   let x0 = null;
@@ -291,54 +367,40 @@ const dateFmt = new Intl.DateTimeFormat('de-CH', { day: 'numeric', month: 'numer
 const smallIcon = (name) =>
   `<svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WEATHER_ICONS[name] || WEATHER_ICONS.cloud}</svg>`;
 
-/** 7-Tage-Vorschau: Tag, Symbol, Niederschlag, Tiefst-/Höchstwert mit Balken */
-function renderForecast(list, days) {
-  if (!list) return;
-  list.textContent = '';
-  const sub = list.previousElementSibling;
-  if (!days.length) {
-    list.hidden = true;
-    if (sub) sub.hidden = true;
-    return;
-  }
-  const lo = Math.min(...days.map((d) => d.min));
-  const hi = Math.max(...days.map((d) => d.max));
-  const span = Math.max(1, hi - lo);
-  for (const d of days) {
+/** Wettertabelle: heute + 7 Tage – Tag, Wetter (Symbol, Text, Niederschlag), Tiefst- und Höchsttemperatur */
+function renderForecast(table, today, days) {
+  if (!table) return;
+  const body = $('tbody', table);
+  body.textContent = '';
+  const rows = [...(today ? [{ ...today, label: 'Heute' }] : []), ...days];
+  const title = table.previousElementSibling;
+  table.hidden = !rows.length;
+  if (title) title.hidden = !rows.length;
+  const cell = (tag, cls, text) => {
+    const c = document.createElement(tag);
+    if (cls) c.className = cls;
+    if (text != null) c.textContent = text;
+    return c;
+  };
+  for (const d of rows) {
     const date = new Date(`${d.date}T00:00:00Z`);
-    const li = document.createElement('li');
-    li.className = 'forecast-day';
-    const name = document.createElement('span');
-    name.className = 'forecast-name';
-    name.textContent = dayFmt.format(date).replace('.', '');
-    const dt = document.createElement('span');
-    dt.className = 'forecast-date';
-    dt.textContent = dateFmt.format(date);
-    name.append(dt);
-    const icon = document.createElement('span');
-    icon.className = 'forecast-icon';
+    const tr = document.createElement('tr');
+    if (d.label) tr.className = 'is-today';
+    const day = cell('th', 'forecast-day', d.label || dayFmt.format(date).replace('.', ''));
+    day.scope = 'row';
+    day.append(cell('span', 'forecast-date', dateFmt.format(date)));
+    const wx = cell('td', 'forecast-wx');
+    const inner = cell('div', 'forecast-wx-inner');
+    const icon = cell('span', 'forecast-icon');
     icon.innerHTML = smallIcon(d.icon);
-    icon.title = d.text;
-    const precip = document.createElement('span');
-    precip.className = 'forecast-precip';
-    precip.textContent = d.snow > 0 ? `${String(d.snow).replace('.', ',')} cm` : d.precip != null && d.precip >= 20 ? `${d.precip} %` : '';
-    const min = document.createElement('span');
-    min.className = 'forecast-min';
-    min.textContent = deg(d.min);
-    const bar = document.createElement('span');
-    bar.className = 'forecast-bar';
-    const fill = document.createElement('span');
-    fill.style.left = `${((d.min - lo) / span) * 100}%`;
-    fill.style.right = `${((hi - d.max) / span) * 100}%`;
-    bar.append(fill);
-    const max = document.createElement('span');
-    max.className = 'forecast-max';
-    max.textContent = deg(d.max);
-    const sr = document.createElement('span');
-    sr.className = 'visually-hidden';
-    sr.textContent = `${d.text}, ${deg(d.min)} bis ${deg(d.max)}${d.precip != null ? `, Niederschlag ${d.precip} %` : ''}`;
-    li.append(name, icon, precip, min, bar, max, sr);
-    list.append(li);
+    const txt = cell('span', 'forecast-text');
+    txt.append(cell('span', 'forecast-desc', d.text));
+    const extra = d.snow > 0 ? `Neuschnee ${String(d.snow).replace('.', ',')} cm` : d.precip != null && d.precip >= 20 ? `Niederschlag ${d.precip} %` : '';
+    if (extra) txt.append(cell('span', 'forecast-precip', extra));
+    inner.append(icon, txt);
+    wx.append(inner);
+    tr.append(day, wx, cell('td', 'num forecast-min', deg(d.min)), cell('td', 'num forecast-max', deg(d.max)));
+    body.append(tr);
   }
 }
 
@@ -359,7 +421,7 @@ async function initWeather() {
       $('[data-w-range]', card).textContent = `${deg(w.min)} / ${deg(w.max)}`;
       $('[data-w-feels]', card).textContent = deg(w.feelsLike);
       $('[data-w-wind]', card).textContent = w.wind == null ? '–' : `${w.wind} km/h`;
-      renderForecast($('[data-w-forecast]', card), w.forecast || []);
+      renderForecast($('[data-w-forecast]', card), w.today, w.forecast || []);
       card.hidden = false;
     }
     if (chip) {

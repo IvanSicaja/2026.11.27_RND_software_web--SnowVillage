@@ -2,7 +2,7 @@
 
 Minimalistisch, schnell, barrierefrei und **mobile first**. Schwarz-Weiss mit ruhigen Naturtönen (Schnee, Stein, Wasser, Holz, Metall), abgerundete Ecken, automatischer Dunkelmodus.
 
-**Enthalten:** Bilder-Karussell · Live-Temperatur mit 7-Tage-Vorschau · 360° in vier Jahreszeiten · Karte mit Wander-, Lauf- und Velorouten und Aussichtspunkten · Dorfleben & Tradition · Ausflugsziele · 360°-Panoramen · Galerie mit Vollbild · YouTube-Videos · Blog · Anreise & Kontakt · Impressum mit Bildnachweis · Sitemap · RSS-Feed
+**Enthalten:** Bilder-Karussell mit Zoom und Naturklängen · Live-Temperatur mit 7-Tage-Vorschau · 360° in vier Jahreszeiten · Karte mit Wander-, Lauf- und Velorouten und Aussichtspunkten · Dorfleben & Tradition · Ausflugsziele · 360°-Panoramen · Galerie mit Vollbild · YouTube-Videos · Blog · Anreise & Kontakt · Impressum mit Bildnachweis · Sitemap · RSS-Feed
 
 <img src="assets/01_media/02_figures/screenshot_handy_startseite.png" width="260" alt="Startseite auf dem Handy"> <img src="assets/01_media/02_figures/screenshot_handy_wetter-7-tage.png" width="260" alt="Wetter mit 7-Tage-Vorschau">
 
@@ -51,6 +51,22 @@ In `data/site.json` unter `location` eintragen:
 
 Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 
+## Startbild: Karussell mit Naturklängen
+
+- 5 Bilder wechseln alle 6 Sekunden und **zoomen langsam hinein**.
+- Unten im Bild eine **grosse Steuerleiste** (ganze Breite auf dem Handy, ~60 % am Computer):
+  Pause/Start, ein Balken pro Bild zum Antippen (zeigt auch den Fortschritt) und der **Lautsprecher-Knopf**.
+- Jedes Bild hat einen **eigenen Naturklang** (Kirchenglocken & Vögel, Bergwind & Ski, Bergsee, Kaminfeuer, Meer & Möwen).
+  Ton ist standardmässig aus; nach dem Einschalten wird beim Bildwechsel weich übergeblendet.
+  Details: `assets/01_media/03_sounds/naturklaenge.md`.
+
+## Wischbare Reihen
+
+Auf dem Handy stehen Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten und Aktuelles jeweils **in einer Reihe**
+zum Wischen. Am Ende jeder Reihe führt die Karte **„Alle ansehen“** zur Übersichtsseite
+(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/blog`). Am Computer erscheinen sie als Raster mit Link oben rechts.
+Galerie und Videos bleiben unverändert.
+
 ## Karte mit Routen – direkt aus Google Maps
 
 Die Website hat eine eigene, schnelle Karte mit vier Kategorien, die Besucher ein- und ausblenden können:
@@ -91,8 +107,8 @@ Diese Zeichen in `data/site.json` unter `map.googleMyMapsId` eintragen. Über de
 ## Wetter: heute und die nächsten 7 Tage
 
 Oben links im Startbild steht die aktuelle Temperatur. Im Bereich unter den Zahlen zeigt die Wetterkarte
-Temperatur, Wetter, Tiefst-/Höchstwert, gefühlte Temperatur und Wind für heute – und darunter die **nächsten 7 Tage**
-mit Symbol, Niederschlag bzw. Neuschnee in cm und einem Temperaturbalken.
+Temperatur, Wetter, gefühlte Temperatur und Wind – und darunter eine **klare Tabelle für heute und die nächsten 7 Tage**:
+Tag + Datum, Wetter (Symbol, Text, Niederschlag oder Neuschnee in cm), **Min.** und **Max.**
 
 Die Daten kommen von [Open-Meteo](https://open-meteo.com) für die Koordinaten in `data/site.json`.
 Der Server fragt höchstens alle 10 Minuten ab und speichert das Ergebnis – die Website bleibt schnell, auch bei vielen Besuchern.
@@ -136,7 +152,8 @@ Die **5 Bilder im Karussell** stehen in `data/site.json` unter `hero.slides`.
 ### 360° in vier Jahreszeiten
 
 Der Rundblick zeigt denselben Ort in **Winter, Frühling, Sommer und Herbst**; beim Öffnen ist automatisch die aktuelle
-Jahreszeit ausgewählt. Die vier Panoramen sind **gerenderte Illustrationen** (keine Fotos), erzeugt mit
+Jahreszeit ausgewählt. Gewählt wird über Bildkarten; weitere 360°-Ansichten einfach in `data/media.json` → `panoramas`
+ergänzen – sie erscheinen automatisch. Direktlink auf eine Ansicht: `/panorama?ansicht=sommer`. Die vier Panoramen sind **gerenderte Illustrationen** (keine Fotos), erzeugt mit
 `main/scripts/panorama_jahreszeiten.py`. Sie sind Platzhalter, bis eigene 360°-Fotos vorhanden sind.
 
 ### Eigene 360°-Panoramen
@@ -177,7 +194,7 @@ npm run test:e2e       # echte Browser, Desktop + Handy (Playwright + axe)
 
 Für die Browser-Tests einmalig `npx playwright install chromium` ausführen (oder Google Chrome installiert haben).
 
-Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
+Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
 Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch lokale Daten ersetzt – die Tests laufen auch ohne Internet.
 
 ## Platzhalter-Bilder neu erzeugen (optional, Python)
@@ -186,5 +203,6 @@ Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch
 python -m pip install -r draft_requirements_python-3.11.9.txt
 cd main
 python scripts/panorama_jahreszeiten.py public/images/panorama   # 360° Winter/Frühling/Sommer/Herbst
+python scripts/naturklaenge.py public/audio                       # Naturklänge (benötigt ffmpeg)
 python scripts/platzhalter_bilder.py public/images               # übrige Platzhalter
 ```
