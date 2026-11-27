@@ -36,6 +36,7 @@ und im modernsten Format (AVIF/WebP).
 
 ## Kartendaten
 
+- Satellitenbilder: © [Esri](https://www.esri.com), Maxar, Earthstar Geographics, GIS User Community (Esri World Imagery)
 - Karte: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende (ODbL)
 - Geländekarte: © [OpenTopoMap](https://opentopomap.org) (CC-BY-SA)
 - Die Routen in `data/karte.geojson` sind **Beispiele** und müssen durch die echten Routen ersetzt werden.

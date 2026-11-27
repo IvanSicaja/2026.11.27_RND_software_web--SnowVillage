@@ -368,7 +368,10 @@ function mapBlock(ctx, { list = false } = {}) {
   const data = {
     center: [loc.lat, loc.lon],
     zoom: cfg.zoom || 13,
-    tiles: (cfg.tiles || []).map((t) => ({ name: t.name, url: t.url, attribution: t.attribution, subdomains: t.subdomains, maxZoom: t.maxZoom, monochrome: !!t.monochrome })),
+    tiles: (cfg.tiles || []).map((t) => ({
+      name: t.name, url: t.url, attribution: t.attribution, subdomains: t.subdomains, maxZoom: t.maxZoom, maxNativeZoom: t.maxNativeZoom, monochrome: !!t.monochrome,
+      overlays: (t.overlays || []).map((o) => ({ url: o.url, subdomains: o.subdomains, maxNativeZoom: o.maxNativeZoom })),
+    })),
     categories: cats,
     items: mapItems.map((m) => ({ ...m, google: googleMapsLink(startPoint(m)) })),
   };

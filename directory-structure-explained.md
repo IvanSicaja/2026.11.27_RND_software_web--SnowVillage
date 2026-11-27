@@ -77,6 +77,7 @@
 |---|---|
 | Koordinaten des Dorfes (Wetter + Karte) | `data/site.json` → `location` |
 | Die 5 Bilder im Karussell ändern | `data/site.json` → `hero.slides` |
+| Kartenansichten (Satellit, Karte, Gelände) | `data/site.json` → `map.tiles` (erste = Standard) |
 | Routen & Aussichtspunkte ändern | Google My Maps → KML → in `main/`: `npm run karte -- datei.kml` |
 | Texte, Kontakt, Öffnungszeiten ändern | `data/site.json` |
 | Bilder, Videos, Panoramen, Ausflugsziele ändern | `data/media.json` |

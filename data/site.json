@@ -177,6 +177,30 @@
     "googleMyMapsId": "",
     "tiles": [
       {
+        "name": "Satellit",
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "attribution": "Satellitenbilder © <a href=\"https://www.esri.com\">Esri</a>, Maxar, Earthstar Geographics, GIS User Community",
+        "maxZoom": 19,
+        "maxNativeZoom": 18
+      },
+      {
+        "name": "Satellit mit Beschriftung",
+        "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "attribution": "Satellitenbilder © <a href=\"https://www.esri.com\">Esri</a>, Maxar, Earthstar Geographics, GIS User Community",
+        "maxZoom": 19,
+        "maxNativeZoom": 18,
+        "overlays": [
+          {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+            "maxNativeZoom": 18
+          },
+          {
+            "url": "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+            "maxNativeZoom": 18
+          }
+        ]
+      },
+      {
         "name": "Karte",
         "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
         "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
@@ -190,6 +214,7 @@
         "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>, <a href=\"https://opentopomap.org\">OpenTopoMap</a> (CC-BY-SA)",
         "maxZoom": 17
       }
-    ]
+    ],
+    "tilesHinweis": "Die erste Ansicht ist der Standard. Besucher wechseln über das Ebenen-Symbol oben rechts in der Karte."
   }
 }

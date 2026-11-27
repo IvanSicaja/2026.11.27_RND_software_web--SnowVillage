@@ -158,6 +158,7 @@ test('CSP erlaubt nur die nötigen externen Quellen', async () => {
   assert.match(csp, /img-src [^;]*https:\/\/images\.unsplash\.com/);
   assert.match(csp, /img-src [^;]*https:\/\/tile\.openstreetmap\.org/);
   assert.match(csp, /img-src [^;]*https:\/\/\*\.tile\.opentopomap\.org/);
+  assert.match(csp, /img-src [^;]*https:\/\/server\.arcgisonline\.com/);
   assert.match(csp, /frame-src [^;]*https:\/\/www\.google\.com/);
   assert.doesNotMatch(csp, /script-src [^;]*https:/, 'keine externen Scripts');
 });

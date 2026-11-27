@@ -71,6 +71,13 @@ Galerie und Videos bleiben unverändert.
 
 ## Karte mit Routen – direkt aus Google Maps
 
+**Kartenansicht:** Standard ist das **Satellitenbild** (Wald, Seen, Dächer – wie ein echtes Luftbild).
+Über das **Ebenen-Symbol oben rechts** in der Karte wählen Besucher: *Satellit*, *Satellit mit Beschriftung*
+(Strassen und Ortsnamen), *Karte* oder *Gelände*. Die Wahl wird im Browser gemerkt.
+Satellitenbilder: Esri World Imagery (ohne Schlüssel nutzbar, Quellenangabe in der Karte). Für eine offizielle,
+kommerzielle Website empfiehlt Esri ein kostenloses Konto auf der ArcGIS Location Platform. Die Reihenfolge und die
+Ansichten stehen in `data/site.json` → `map.tiles` (die erste ist der Standard).
+
 Die Website hat eine eigene, schnelle Karte mit vier Kategorien, die Besucher ein- und ausblenden können:
 **Wandern · Laufen · Velo · Aussicht & Sehenswertes**. Jede Route hat einen Knopf „In Google Maps öffnen“ –
 damit startet auf dem Handy direkt die Navigation zum Startpunkt.
@@ -196,7 +203,7 @@ npm run test:e2e       # echte Browser, Desktop + Handy (Playwright + axe)
 
 Für die Browser-Tests einmalig `npx playwright install chromium` ausführen (oder Google Chrome installiert haben).
 
-Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
+Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Satellit als Standard, Ansicht wechseln und merken, Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
 Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch lokale Daten ersetzt – die Tests laufen auch ohne Internet.
 
 ## Platzhalter-Bilder neu erzeugen (optional, Python)

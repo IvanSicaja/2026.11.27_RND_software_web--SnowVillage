@@ -595,3 +595,54 @@ test('Runterscrollen pausiert den Naturklang, Hochscrollen spielt weiter', async
   await expect(carousel).toHaveAttribute('data-sound-src', src); // derselbe Klang, kein Neustart
   expect(errors).toEqual([]);
 });
+
+/* ---------- Karte: Satellit als Standard, Ansicht wählbar ---------- */
+test('Karte zeigt Satellitenbild; Ansicht über das Symbol oben rechts wählbar und gemerkt', async ({ page, isMobile }) => {
+  const errors = collectErrors(page);
+  await page.goto('/ausflugsziele');
+  const map = page.locator('[data-map]');
+  await expect(map).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
+  await expect(map).toHaveAttribute('data-base-layer', 'Satellit');
+  await expect(map.locator('.leaflet-tile-pane img[src*="World_Imagery"]').first()).toBeAttached();
+  await expect(map.locator('.leaflet-tile-pane img[src*="openstreetmap"]')).toHaveCount(0);
+  await expect(map.locator('.leaflet-control-attribution')).toContainText('Esri');
+
+  // Symbol oben rechts öffnen
+  const toggle = map.locator('.leaflet-control-layers-toggle');
+  await expect(toggle).toHaveAttribute('title', 'Kartenansicht wählen');
+  const tb = await toggle.boundingBox();
+  const mb = await map.locator('[data-map-canvas]').boundingBox();
+  expect(tb.x + tb.width).toBeGreaterThan(mb.x + mb.width - 80); // rechts
+  expect(tb.y).toBeLessThan(mb.y + 80); // oben
+  const list = map.locator('.leaflet-control-layers-list');
+  const open = async () => {
+    if (await list.isVisible()) return;
+    // Desktop: Maus über das Symbol klappt die Auswahl auf; Handy: antippen
+    if (isMobile) await toggle.tap({ force: true });
+    else await map.locator('.leaflet-control-layers').hover();
+    await expect(list).toBeVisible();
+  };
+  await open();
+  const names = (await list.locator('label').allTextContents()).map((t) => t.trim());
+  expect(names).toEqual(['Satellit', 'Satellit mit Beschriftung', 'Karte', 'Gelände']);
+
+  // Satellit mit Beschriftung: Bild + Strassen/Ortsnamen
+  await list.getByText('Satellit mit Beschriftung').click();
+  await expect(map).toHaveAttribute('data-base-layer', 'Satellit mit Beschriftung');
+  await expect(map.locator('.leaflet-tile-pane img[src*="World_Boundaries_and_Places"]').first()).toBeAttached();
+
+  // Normale Karte
+  await open();
+  await list.getByText('Karte', { exact: true }).click();
+  await expect(map).toHaveAttribute('data-base-layer', 'Karte');
+  await expect(map.locator('.leaflet-tile-pane img[src*="openstreetmap"]').first()).toBeAttached();
+  await expect(map.locator('.leaflet-tile-pane img[src*="World_Imagery"]')).toHaveCount(0);
+
+  // Wahl bleibt beim nächsten Besuch erhalten
+  await page.reload();
+  await expect(map).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
+  await expect(map).toHaveAttribute('data-base-layer', 'Karte');
+  // Routen bleiben auf jeder Ansicht sichtbar
+  expect(await map.locator('.leaflet-overlay-pane path').count()).toBeGreaterThan(10);
+  expect(errors).toEqual([]);
+});

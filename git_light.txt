@@ -52,19 +52,16 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.5
+v0.0.6
 
 ### TODOs / To Fix
 
 ### Fixed / Improved
 
 ### Added / New Features
-- disabled carousel navigation controls while scrolling down the page
-- re-enabled controls when returning to the top section
+- set Google Maps default view to satellite for a more natural look
 
 ### Additional Comment
-
-### All Req
 
 "
 

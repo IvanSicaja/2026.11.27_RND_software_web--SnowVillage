@@ -72,7 +72,8 @@ export function createApp({ contentDir = join(ROOT, '..', 'data'), publicDir = j
   // Erlaubte Kartenserver werden aus data/site.json abgeleitet (map.tiles)
   const tileHosts = () => {
     const hosts = new Set();
-    for (const t of content.site.map?.tiles || []) {
+    const urls = (content.site.map?.tiles || []).flatMap((t) => [t, ...(t.overlays || [])]);
+    for (const t of urls) {
       try {
         const u = new URL(t.url.replace('{s}', 'a').replace(/\{[a-z]\}/g, '0'));
         hosts.add(t.url.includes('{s}') ? `${u.protocol}//*.${u.host.split('.').slice(1).join('.')}` : u.origin);

@@ -62,20 +62,43 @@ export async function createMap(root) {
     zoomSnap: 0.5,
   }).setView(data.center, data.zoom);
 
-  // Hintergrundkarten
+  // Hintergrundkarten: die erste (Satellit) ist Standard, Auswahl über das Ebenen-Symbol oben rechts
+  const STORE_KEY = 'karte-ansicht';
   const bases = {};
-  data.tiles.forEach((t, i) => {
-    const layer = L.tileLayer(t.url, {
-      attribution: t.attribution,
-      subdomains: t.subdomains || 'abc',
-      maxZoom: t.maxZoom || 18,
-      className: t.monochrome ? 'tiles-mono' : '',
-      crossOrigin: false,
-    });
-    bases[t.name] = layer;
-    if (i === 0) layer.addTo(map);
+  const tileOpts = (t) => ({
+    attribution: t.attribution,
+    subdomains: t.subdomains || 'abc',
+    maxZoom: t.maxZoom || 18,
+    maxNativeZoom: t.maxNativeZoom || t.maxZoom || 18,
+    className: t.monochrome ? 'tiles-mono' : '',
   });
-  if (data.tiles.length > 1) L.control.layers(bases, null, { position: 'topright' }).addTo(map);
+  for (const t of data.tiles) {
+    const base = L.tileLayer(t.url, tileOpts(t));
+    const extra = (t.overlays || []).map((o) => L.tileLayer(o.url, { ...tileOpts(t), ...o, attribution: '', className: 'tiles-overlay' }));
+    bases[t.name] = extra.length ? L.layerGroup([base, ...extra]) : base;
+  }
+  let saved = null;
+  try {
+    saved = localStorage.getItem(STORE_KEY);
+  } catch { /* privat / blockiert */ }
+  const startName = saved && bases[saved] ? saved : data.tiles[0]?.name;
+  if (startName) bases[startName].addTo(map);
+  root.dataset.baseLayer = startName || '';
+  map.on('baselayerchange', (e) => {
+    root.dataset.baseLayer = e.name;
+    try {
+      localStorage.setItem(STORE_KEY, e.name);
+    } catch { /* egal */ }
+  });
+  if (data.tiles.length > 1) {
+    const ctl = L.control.layers(bases, null, { position: 'topright', collapsed: true }).addTo(map);
+    const toggle = ctl.getContainer().querySelector('.leaflet-control-layers-toggle');
+    if (toggle) {
+      toggle.title = 'Kartenansicht wählen';
+      toggle.setAttribute('aria-label', 'Kartenansicht wählen: Satellit, Karte oder Gelände');
+      toggle.setAttribute('role', 'button');
+    }
+  }
 
   // Routen & Orte
   const catById = Object.fromEntries(data.categories.map((c) => [c.id, c]));

@@ -26,7 +26,7 @@ export const WEATHER = {
 export async function mockExternal(page, { weather = WEATHER } = {}) {
   let i = 0;
   await page.route(/images\.unsplash\.com/, (r) => r.fulfill({ status: 200, contentType: 'image/webp', body: photos[i++ % photos.length] }));
-  await page.route(/tile\.openstreetmap\.org|tile\.opentopomap\.org/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: tile }));
+  await page.route(/tile\.openstreetmap\.org|tile\.opentopomap\.org|server\.arcgisonline\.com/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: tile }));
   await page.route(/youtube-nocookie\.com|i\.ytimg\.com|www\.google\.com/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' }));
   await page.route('**/api/wetter', (r) =>
     weather ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(weather) }) : r.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' }),
