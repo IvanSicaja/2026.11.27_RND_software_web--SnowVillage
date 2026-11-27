@@ -214,14 +214,15 @@ function panoramaBlock(panoramas, { now = new Date(), limit, selected } = {}) {
       <img src="${p.preview || p.image}" alt="" width="1200" height="600" loading="lazy" decoding="async">
       <span class="pano-card-title">${p.title}</span>
     </button>`),
-    { label: '360°-Ansicht wählen', cols: 4, more: limit && panoramas.length > 0 ? { href: '/panorama', label: 'Alle 360°-Ansichten', count: panoramas.length } : null, cls: 'pano-cards' },
+    { label: '360°-Ansicht wählen', cols: 4, more: limit && panoramas.length > 0 ? { href: '/panorama', label: 'Alle 360°-Ansichten', count: panoramas.length, image: (panoramas.find((p) => p !== first) || first).preview } : null, cls: 'pano-cards' },
   )}` : ''}
 </div>`;
 }
 
 /* ---------- Wischbare Reihe (Handy) mit "Alle ansehen" am Ende ---------- */
-function moreCard({ href, label, count }) {
-  return html`<a class="more-card" href="${href}">
+function moreCard({ href, label, count, image, imageVariants }) {
+  return html`<a class="more-card${image ? ' more-card--image' : ''}" href="${href}">
+    ${image ? (isRemote(image) || !imageVariants ? html`<img class="more-card-bg" src="${isRemote(image) ? unsplash(image, 640, 4 / 5) : image}" alt="" loading="lazy" decoding="async">` : picture(imageVariants, image, { alt: '', cls: 'more-card-bg', sizes: '80vw', maxWidth: 800 })) : ''}
     <span class="more-card-icon">${icons.arrow}</span>
     <span class="more-card-label">${label}</span>
     ${count ? html`<span class="more-card-count">${count} insgesamt</span>` : ''}
@@ -309,6 +310,7 @@ function heroCarousel(ctx) {
   </div>
   <div class="hero-content">
     <h1>${site.intro.title}</h1>
+    <div class="hero-bar">
     <div class="actions">
       <a class="btn btn--light" href="/ausflugsziele">Entdecken</a>
       <a class="btn btn--ghost-light" href="/panorama">360° ansehen</a>
@@ -326,6 +328,7 @@ function heroCarousel(ctx) {
       </button>` : ''}
     </div>
     <p class="sound-caption" data-sound-caption aria-live="polite" hidden></p>` : ''}
+    </div>
   </div>
 </section>`;
 }
@@ -375,25 +378,29 @@ function mapBlock(ctx, { list = false } = {}) {
     categories: cats,
     items: mapItems.map((m) => ({ ...m, google: googleMapsLink(startPoint(m)) })),
   };
+  // Google Maps: eigene "My Maps"-Karte (mit Routen), sonst Google Maps vom Dorf in Satellitenansicht (ohne Schlüssel)
+  const googleSrc = cfg.googleMyMapsId
+    ? `https://www.google.com/maps/d/embed?mid=${encodeURIComponent(cfg.googleMyMapsId)}`
+    : `https://www.google.com/maps?q=${loc.lat},${loc.lon}&t=k&z=${cfg.zoom || 13}&hl=de&output=embed`;
+  const startGoogle = cfg.defaultView === 'google';
   const meta = (m) => [m.lengthKm ? `${String(m.lengthKm).replace('.', ',')} km` : '', m.duration, m.difficulty].filter(Boolean).join(' · ');
   return html`
-<div class="map-block" data-map>
+<div class="map-block" data-map${startGoogle ? raw(' data-start-view="google"') : ''}>
   <div class="map-toolbar">
     <div class="chips" role="group" aria-label="Auf der Karte anzeigen">
       ${cats.map((c) => html`<button type="button" class="chip chip--cat" aria-pressed="true" data-map-filter="${c.id}">
         <span class="swatch swatch--${c.id}" aria-hidden="true"></span>${c.label} <span class="chip-count">${counts[c.id]}</span></button>`)}
     </div>
-    ${cfg.googleMyMapsId ? html`
     <div class="seg" role="group" aria-label="Kartenansicht">
-      <button type="button" class="seg-btn" aria-pressed="true" data-map-view="own">Unsere Karte</button>
-      <button type="button" class="seg-btn" aria-pressed="false" data-map-view="google">Google Maps</button>
-    </div>` : ''}
+      <button type="button" class="seg-btn" aria-pressed="${startGoogle ? 'false' : 'true'}" data-map-view="own">Unsere Karte</button>
+      <button type="button" class="seg-btn" aria-pressed="${startGoogle ? 'true' : 'false'}" data-map-view="google">Google Maps</button>
+    </div>
   </div>
   <div class="map-stage">
     <div class="map-canvas" data-map-canvas role="region" aria-label="Interaktive Karte mit Wander-, Lauf- und Velorouten sowie Aussichtspunkten">
       <p class="map-placeholder">Karte wird geladen …<noscript> Für die Karte bitte JavaScript aktivieren.</noscript></p>
     </div>
-    ${cfg.googleMyMapsId ? html`<div class="map-google" data-map-google data-src="https://www.google.com/maps/d/embed?mid=${encodeURIComponent(cfg.googleMyMapsId)}" hidden></div>` : ''}
+    <div class="map-google" data-map-google data-src="${googleSrc}" hidden></div>
   </div>
   ${list ? html`
   <ul class="route-list" data-route-list>
@@ -436,7 +443,7 @@ function villageSection(ctx) {
   ${sectionHead(v.title, '/dorfleben', 'Alles zum Dorfleben', v.text)}
   ${scrollRow(v.items.slice(0, HOME_LIMIT).map((it) => villageCard(ctx, it)), {
     label: v.title,
-    more: { href: '/dorfleben', label: 'Alles zum Dorfleben', count: v.items.length },
+    more: { href: '/dorfleben', label: 'Alles zum Dorfleben', count: v.items.length, image: (v.items[HOME_LIMIT] || v.items[0]).src },
   })}
 </section>`;
 }
@@ -479,7 +486,7 @@ ${heroCarousel(ctx)}
 <section class="container section" id="in-der-naehe">
   ${sectionHead('In der Nähe', '/ausflugsziele', 'Alle Routen & Ziele', 'Wandern, laufen, Velo fahren – und die schönsten Aussichtspunkte. Kategorien antippen zum Ein- und Ausblenden.')}
   ${mapBlock(ctx)}
-  <div class="mt">${scrollRow(media.places.map((p) => placeCard(ctx, p)), { label: 'Ausflugsziele', cols: 4, more: { href: '/ausflugsziele', label: 'Alle Routen & Ziele', count: media.places.length + ctx.mapItems.length } })}</div>
+  <div class="mt">${scrollRow(media.places.map((p) => placeCard(ctx, p)), { label: 'Ausflugsziele', cols: 4, more: { href: '/ausflugsziele', label: 'Alle Routen & Ziele', count: media.places.length + ctx.mapItems.length, image: media.gallery.find((g) => /Wander/i.test(g.caption))?.src || media.places[0]?.image } })}</div>
 </section>
 
 ${villageSection(ctx)}
@@ -503,7 +510,7 @@ ${media.videos.length ? html`
 ${latest.length ? html`
 <section class="container section">
   ${sectionHead('Aktuelles', '/blog', 'Alle Beiträge')}
-  ${scrollRow(latest.map((a) => articleCard(ctx, a)), { label: 'Aktuelle Beiträge', more: { href: '/blog', label: 'Alle Beiträge', count: articles.length } })}
+  ${scrollRow(latest.map((a) => articleCard(ctx, a)), { label: 'Aktuelle Beiträge', more: { href: '/blog', label: 'Alle Beiträge', count: articles.length, image: (articles[3] || articles[0]).image || media.gallery[0]?.src } })}
 </section>` : ''}
 
 <section class="container section">

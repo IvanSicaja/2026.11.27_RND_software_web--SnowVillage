@@ -433,13 +433,17 @@ test('Karussell zoomt ins Bild hinein (nicht heraus)', async ({ page }) => {
   expect(s2).toBeLessThanOrEqual(1.1);
 });
 
-test('Steuerleiste: gross, mindestens 50 % der Bildbreite, unten im Bild', async ({ page, isMobile }) => {
+test('Steuerleiste: gross, mindestens 50 % der Bildbreite; Handy unter dem Bild, Desktop unten im Bild', async ({ page, isMobile }) => {
   await page.goto('/');
   const media = await page.locator('.hero-media').boundingBox();
   const bar = await page.locator('[data-carousel-controls]').boundingBox();
   expect(bar.width / media.width).toBeGreaterThanOrEqual(isMobile ? 0.85 : 0.5);
-  expect(bar.y + bar.height).toBeLessThanOrEqual(media.y + media.height);
-  expect(bar.y).toBeGreaterThan(media.y + media.height / 2); // untere Hälfte
+  if (isMobile) {
+    expect(bar.y).toBeGreaterThanOrEqual(media.y + media.height); // unter dem Bild
+  } else {
+    expect(bar.y + bar.height).toBeLessThanOrEqual(media.y + media.height);
+    expect(bar.y).toBeGreaterThan(media.y + media.height / 2); // untere Hälfte im Bild
+  }
   for (const el of await page.locator('[data-carousel-dot], [data-carousel-toggle], [data-carousel-sound]').all()) {
     const b = await el.boundingBox();
     expect(b.height, 'Tippfläche mindestens 44 px').toBeGreaterThanOrEqual(44);
@@ -645,4 +649,64 @@ test('Karte zeigt Satellitenbild; Ansicht über das Symbol oben rechts wählbar 
   // Routen bleiben auf jeder Ansicht sichtbar
   expect(await map.locator('.leaflet-overlay-pane path').count()).toBeGreaterThan(10);
   expect(errors).toEqual([]);
+});
+
+/* ---------- Handy: Bild frei, Knöpfe darunter ---------- */
+test('Handy: im Bild nur Wetter, Foto und Überschrift – Knöpfe und Steuerung unter dem Bild, darunter die Zahlen', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy');
+  await page.goto('/');
+  const media = await page.locator('.hero-media').boundingBox();
+  const inside = async (sel) => {
+    const b = await page.locator(sel).first().boundingBox();
+    return b.y >= media.y - 1 && b.y + b.height <= media.y + media.height + 1;
+  };
+  expect(await inside('[data-weather-chip]')).toBe(true);
+  expect(await inside('.slide-credit')).toBe(true);
+  expect(await inside('.hero h1')).toBe(true);
+  const actions = await page.locator('.hero .actions').boundingBox();
+  const controls = await page.locator('[data-carousel-controls]').boundingBox();
+  const facts = await page.locator('.facts').boundingBox();
+  expect(actions.y).toBeGreaterThanOrEqual(media.y + media.height); // Knöpfe unter dem Bild
+  expect(controls.y).toBeGreaterThanOrEqual(actions.y + actions.height - 1); // Steuerung darunter
+  expect(facts.y).toBeGreaterThanOrEqual(controls.y + controls.height); // dann Skigebiet, Pisten …
+  // Knöpfe funktionieren weiterhin
+  await page.getByRole('link', { name: '360° ansehen' }).click();
+  await expect(page).toHaveURL(/\/panorama$/);
+});
+
+/* ---------- "Alle ansehen" mit Foto ---------- */
+test('"Alle ansehen"-Karten haben ein Foto im Hintergrund', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'nur Handy sichtbar');
+  await page.goto('/');
+  const cards = page.locator('a.more-card');
+  await expect(cards).toHaveCount(4);
+  for (const card of await cards.all()) {
+    await expect(card).toHaveClass(/more-card--image/);
+    await card.evaluate((el) => el.closest('[data-scroll-row]').scrollTo({ left: 99999, behavior: 'instant' }));
+    await card.scrollIntoViewIfNeeded();
+    const img = card.locator('img.more-card-bg');
+    await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth)).toBeGreaterThan(0);
+    // Text bleibt hell und lesbar
+    expect(await card.locator('.more-card-label').evaluate((e) => getComputedStyle(e).color)).toBe('rgb(255, 255, 255)');
+  }
+});
+
+/* ---------- Google Maps ---------- */
+test('Karte: Umschalter zu Google Maps zeigt das Dorf in Google Maps (Satellit)', async ({ page }) => {
+  await page.goto('/ausflugsziele');
+  const map = page.locator('[data-map]');
+  await expect(map).toHaveAttribute('data-state', 'ready', { timeout: 15_000 });
+  await expect(map.locator('iframe')).toHaveCount(0); // erst beim Umschalten laden
+  await page.getByRole('button', { name: 'Google Maps', exact: true }).click();
+  const frame = map.locator('[data-map-google] iframe');
+  await expect(frame).toBeVisible();
+  await expect(frame).toHaveAttribute('src', /^https:\/\/www\.google\.com\/maps\?q=-?\d+(\.\d+)?,-?\d+(\.\d+)?&t=k&z=\d+&hl=de&output=embed$/);
+  await expect(frame).toHaveAttribute('title', 'Google Maps');
+  await expect(map.locator('[data-map-canvas]')).toBeHidden();
+  await expect(page.locator('[data-map-filter]').first()).toBeDisabled();
+  // zurück zur eigenen Karte mit Routen
+  await page.getByRole('button', { name: 'Unsere Karte' }).click();
+  await expect(map.locator('[data-map-canvas]')).toBeVisible();
+  await expect(page.locator('[data-map-filter]').first()).toBeEnabled();
+  await expect(map).toHaveAttribute('data-view', 'own');
 });

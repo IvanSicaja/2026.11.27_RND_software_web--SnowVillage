@@ -184,7 +184,7 @@ test('360°: vier Jahreszeiten, aktuelle Jahreszeit vorausgewählt', async () =>
   const seasons = ['winter', 'winter', 'fruehling', 'fruehling', 'fruehling', 'sommer', 'sommer', 'sommer', 'herbst', 'herbst', 'herbst', 'winter'];
   const current = { winter: 'Winter', fruehling: 'Frühling', sommer: 'Sommer', herbst: 'Herbst' }[seasons[new Date().getMonth()]];
   assert.deepEqual(cards.filter((c) => c[1] === 'true').map((c) => c[0]), [current]);
-  assert.ok(!body.includes('class="more-card"'), 'Auf der 360°-Seite selbst keine "Alle ansehen"-Karte');
+  assert.ok(!body.includes('class="more-card'), 'Auf der 360°-Seite selbst keine "Alle ansehen"-Karte');
   // Direktlink auf eine Ansicht
   const deep = await (await get('/panorama?ansicht=sommer')).text();
   assert.match(deep, /class="pano-card" aria-pressed="true" aria-label="Sommer"/);
@@ -194,7 +194,7 @@ test('360°: vier Jahreszeiten, aktuelle Jahreszeit vorausgewählt', async () =>
 test('Startseite: wischbare Reihen enden mit "Alle ansehen"', async () => {
   const body = await (await get('/')).text();
   const rows = [...body.matchAll(/<div class="grid [^"]*grid--scroll[^"]*"[^>]*aria-label="([^"]+)"[^>]*data-scroll-row>([\s\S]*?)<\/div>\s*(?=<\/section>|<\/div>)/g)];
-  const more = [...body.matchAll(/<a class="more-card" href="([^"]+)">/g)].map((m) => m[1]);
+  const more = [...body.matchAll(/<a class="more-card[^"]*" href="([^"]+)">/g)].map((m) => m[1]);
   assert.deepEqual(more, ['/ausflugsziele', '/dorfleben', '/panorama', '/blog']);
   assert.ok(rows.length >= 3);
   // Dorfleben: nur die ersten 3 auf der Startseite, alle auf /dorfleben

@@ -215,6 +215,8 @@
         "maxZoom": 17
       }
     ],
-    "tilesHinweis": "Die erste Ansicht ist der Standard. Besucher wechseln über das Ebenen-Symbol oben rechts in der Karte."
+    "tilesHinweis": "Die erste Ansicht ist der Standard. Besucher wechseln über das Ebenen-Symbol oben rechts in der Karte.",
+    "defaultView": "own",
+    "defaultViewHinweis": "\"own\" = unsere Karte mit Routen und Filtern (Standard), \"google\" = Google Maps zuerst anzeigen."
   }
 }

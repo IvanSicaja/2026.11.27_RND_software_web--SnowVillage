@@ -179,7 +179,8 @@ export async function createMap(root) {
       if (showGoogle && !google.firstChild) {
         const iframe = document.createElement('iframe');
         iframe.src = google.dataset.src;
-        iframe.title = 'Google-Karte mit Routen';
+        iframe.title = 'Google Maps';
+        iframe.allowFullscreen = true;
         iframe.loading = 'lazy';
         iframe.referrerPolicy = 'strict-origin-when-cross-origin';
         google.append(iframe);
@@ -190,6 +191,10 @@ export async function createMap(root) {
       if (!showGoogle) map.invalidateSize();
     });
   }
+
+  if (root.dataset.startView === 'google') viewBtns.find((b) => b.dataset.mapView === 'google')?.click();
+  root.dataset.view = root.dataset.startView === 'google' ? 'google' : 'own';
+  viewBtns.forEach((b) => b.addEventListener('click', () => (root.dataset.view = b.dataset.mapView)));
 
   // Grösse neu berechnen, wenn sich das Layout ändert
   new ResizeObserver(() => map.invalidateSize()).observe(canvas);

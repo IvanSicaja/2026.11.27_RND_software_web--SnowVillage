@@ -52,14 +52,16 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.6
+v0.0.7
 
 ### TODOs / To Fix
 
 ### Fixed / Improved
 
 ### Added / New Features
-- set Google Maps default view to satellite for a more natural look
+- moved Entdecken 360 and carousel controls to the bottom of the hero for better mobile image visibility
+- kept weather location name and welcome text in the upper area
+- improved the more cards in horizontal sections with background images instead of plain white
 
 ### Additional Comment
 

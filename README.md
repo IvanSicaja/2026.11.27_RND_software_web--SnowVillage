@@ -54,6 +54,8 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 ## Startbild: Karussell mit Naturklängen
 
 - 5 Bilder wechseln alle 6 Sekunden und **zoomen langsam hinein**.
+- **Handy:** Im Bild stehen nur Wetter, Fotonachweis und „Willkommen in Steinbach“ – die Knöpfe *Entdecken* / *360° ansehen*
+  und die Steuerleiste liegen **unter dem Bild**, damit das ganze Foto sichtbar ist. Am Computer liegt alles im Bild.
 - Unten im Bild eine **grosse Steuerleiste** (ganze Breite auf dem Handy, ~60 % am Computer):
   Pause/Start, ein Balken pro Bild zum Antippen (zeigt auch den Fortschritt) und der **Lautsprecher-Knopf**.
 - Jedes Bild hat einen **eigenen Naturklang** (Kirchenglocken & Vögel, Bergwind & Ski, Bergsee, Kaminfeuer, Meer & Möwen).
@@ -65,7 +67,7 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 ## Wischbare Reihen
 
 Auf dem Handy stehen Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten und Aktuelles jeweils **in einer Reihe**
-zum Wischen. Am Ende jeder Reihe führt die Karte **„Alle ansehen“** zur Übersichtsseite
+zum Wischen. Am Ende jeder Reihe führt die Karte **„Alle ansehen“** (mit Foto im Hintergrund) zur Übersichtsseite
 (`/ausflugsziele`, `/dorfleben`, `/panorama`, `/blog`). Am Computer erscheinen sie als Raster mit Link oben rechts.
 Galerie und Videos bleiben unverändert.
 
@@ -107,11 +109,17 @@ Einzelne GPS-Touren direkt hinzufügen:
 npm run karte -- morgenrunde.gpx --kategorie laufen --hinzufuegen
 ```
 
-### Zusätzlich die Google-Karte selbst zeigen (optional)
+### Google Maps direkt in der Website
+
+Über der Karte gibt es den Umschalter **„Unsere Karte / Google Maps“**. „Google Maps“ zeigt sofort das Dorf in
+Google Maps (Satellit) – ohne Schlüssel, ohne Kosten. Mit `"defaultView": "google"` in `data/site.json` → `map`
+erscheint Google Maps zuerst.
+
+### Eigene Routen in Google Maps zeigen (optional)
 
 In Google My Maps: **Teilen** → „Jeder mit dem Link kann ansehen“. In der Adresse steht `mid=XXXXXXXX`.
-Diese Zeichen in `data/site.json` unter `map.googleMyMapsId` eintragen. Über der Karte erscheint dann der Umschalter
-**„Unsere Karte / Google Maps“**.
+Diese Zeichen in `data/site.json` unter `map.googleMyMapsId` eintragen. Der Umschalter „Google Maps“ zeigt dann
+diese Karte mit allen eigenen Routen und Punkten.
 
 ## Wetter: heute und die nächsten 7 Tage
 
