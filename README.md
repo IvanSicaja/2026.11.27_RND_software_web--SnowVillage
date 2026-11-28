@@ -54,9 +54,9 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 ## Startbild: Karussell mit Naturklängen
 
 - 5 Bilder wechseln alle 6 Sekunden und **zoomen langsam hinein**.
-- **Handy:** Im Bild stehen nur Wetter, Fotonachweis und „Willkommen in Steinbach“ – die Knöpfe *Entdecken* / *360° ansehen*
-  und die Steuerleiste liegen **unter dem Bild**, damit das ganze Foto sichtbar ist. Am Computer liegt alles im Bild.
-- Unten im Bild eine **grosse Steuerleiste** (ganze Breite auf dem Handy, ~60 % am Computer):
+- **Auf allen Bildschirmen gleich (Handy-Layout):** Im Bild stehen nur Wetter, Fotonachweis und „Willkommen in Steinbach“ –
+  die Knöpfe *Entdecken* / *360° ansehen* und die Steuerleiste liegen **unter dem Bild**, damit das ganze Foto sichtbar ist.
+- Eine **grosse Steuerleiste** (ganze Breite auf dem Handy, ~60 % der Bildbreite am Computer):
   Pause/Start, ein Balken pro Bild zum Antippen (zeigt auch den Fortschritt) und der **Lautsprecher-Knopf**.
 - Jedes Bild hat einen **eigenen Naturklang** (Kirchenglocken & Vögel, Bergwind & Ski, Bergsee, Kaminfeuer, Meer & Möwen).
   Ton ist standardmässig aus; nach dem Einschalten wird beim Bildwechsel weich übergeblendet.
@@ -66,9 +66,10 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 
 ## Wischbare Reihen
 
-Auf dem Handy stehen Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten und Aktuelles jeweils **in einer Reihe**
-zum Wischen. Am Ende jeder Reihe führt die Karte **„Alle ansehen“** (mit Foto im Hintergrund) zur Übersichtsseite
-(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/blog`). Am Computer erscheinen sie als Raster mit Link oben rechts.
+Auf allen Bildschirmen stehen Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten und Aktuelles jeweils **in einer Reihe**
+zum seitlichen Scrollen (Wischen, Trackpad, Shift+Mausrad, Pfeiltasten oder die runden Blätter-Knöpfe am Computer). Am Ende jeder Reihe führt die Karte **„Alle ansehen“** (mit Foto im Hintergrund) zur Übersichtsseite
+(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/blog`). Seitliches Scrollen löst nie die „Zurück“-Geste des Browsers aus
+und lässt die Seite nicht springen.
 Galerie und Videos bleiben unverändert.
 
 ## Karte mit Routen – direkt aus Google Maps

@@ -52,16 +52,15 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.7
+v0.0.8
 
 ### TODOs / To Fix
 
 ### Fixed / Improved
 
 ### Added / New Features
-- moved Entdecken 360 and carousel controls to the bottom of the hero for better mobile image visibility
-- kept weather location name and welcome text in the upper area
-- improved the more cards in horizontal sections with background images instead of plain white
+- applied the clean mobile layout to all screen sizes for consistent minimalist design
+- fixed horizontal scroll jumping to the top of the page
 
 ### Additional Comment
 

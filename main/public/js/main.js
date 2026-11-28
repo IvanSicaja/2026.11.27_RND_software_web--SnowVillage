@@ -494,7 +494,37 @@ function initImageFallback() {
   for (const img of document.images) if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) swap(img);
 }
 
+/* ---------- Wischbare Reihen: Blätter-Knöpfe (Maus) und sauberes seitliches Scrollen ---------- */
+function initRows() {
+  for (const wrap of $$('[data-row-wrap]')) {
+    const row = $('[data-scroll-row]', wrap);
+    const prev = $('[data-row-prev]', wrap);
+    const next = $('[data-row-next]', wrap);
+    if (!row) continue;
+    const update = () => {
+      const max = row.scrollWidth - row.clientWidth;
+      prev.disabled = row.scrollLeft <= 2;
+      next.disabled = row.scrollLeft >= max - 2;
+    };
+    const step = (dir) => {
+      const smooth = !reducedMotion;
+      row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: smooth ? 'smooth' : 'auto' });
+    };
+    prev.addEventListener('click', () => step(-1));
+    next.addEventListener('click', () => step(1));
+    row.addEventListener('scroll', update, { passive: true });
+    row.addEventListener('keydown', (e) => {
+      if (e.target !== row) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    });
+    new ResizeObserver(update).observe(row);
+    update();
+  }
+}
+
 initImageFallback();
+initRows();
 initNav();
 initCarousel();
 initWeather();

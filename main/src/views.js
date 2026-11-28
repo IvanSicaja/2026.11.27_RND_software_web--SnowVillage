@@ -230,10 +230,14 @@ function moreCard({ href, label, count, image, imageVariants }) {
 }
 
 function scrollRow(items, { label, cols = 3, more, cls = '' }) {
-  return html`<div class="grid grid--${cols} grid--scroll${cls ? ` ${cls}` : ''}" tabindex="0" role="region" aria-label="${label}" data-scroll-row>
+  return html`<div class="row-wrap" data-row-wrap>
+  <button type="button" class="row-nav row-nav--prev" data-row-prev aria-label="${label}: nach links blättern" disabled>${icons.prev}</button>
+  <div class="grid grid--${cols} grid--scroll${cls ? ` ${cls}` : ''}" tabindex="0" role="region" aria-label="${label}" data-scroll-row>
     ${items}
     ${more ? moreCard(more) : ''}
-  </div>`;
+  </div>
+  <button type="button" class="row-nav row-nav--next" data-row-next aria-label="${label}: nach rechts blättern">${icons.next}</button>
+</div>`;
 }
 
 function galleryGrid(ctx, items, { limit } = {}) {

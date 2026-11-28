@@ -433,17 +433,13 @@ test('Karussell zoomt ins Bild hinein (nicht heraus)', async ({ page }) => {
   expect(s2).toBeLessThanOrEqual(1.1);
 });
 
-test('Steuerleiste: gross, mindestens 50 % der Bildbreite; Handy unter dem Bild, Desktop unten im Bild', async ({ page, isMobile }) => {
+test('Steuerleiste: gross, mindestens 50 % der Bildbreite, direkt unter dem Bild', async ({ page, isMobile }) => {
   await page.goto('/');
   const media = await page.locator('.hero-media').boundingBox();
   const bar = await page.locator('[data-carousel-controls]').boundingBox();
   expect(bar.width / media.width).toBeGreaterThanOrEqual(isMobile ? 0.85 : 0.5);
-  if (isMobile) {
-    expect(bar.y).toBeGreaterThanOrEqual(media.y + media.height); // unter dem Bild
-  } else {
-    expect(bar.y + bar.height).toBeLessThanOrEqual(media.y + media.height);
-    expect(bar.y).toBeGreaterThan(media.y + media.height / 2); // untere Hälfte im Bild
-  }
+  expect(bar.y).toBeGreaterThanOrEqual(media.y + media.height); // unter dem Bild
+  expect(bar.y).toBeLessThan(media.y + media.height + 200); // aber direkt darunter
   for (const el of await page.locator('[data-carousel-dot], [data-carousel-toggle], [data-carousel-sound]').all()) {
     const b = await el.boundingBox();
     expect(b.height, 'Tippfläche mindestens 44 px').toBeGreaterThanOrEqual(44);
@@ -499,8 +495,7 @@ const ROWS = [
   ['Aktuelle Beiträge', '/blog'],
 ];
 
-test('Handy: Reihen lassen sich wischen und enden mit "Alle ansehen"', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'nur Handy');
+test('Alle Bildschirme: Reihen lassen sich seitlich scrollen und enden mit "Alle ansehen"', async ({ page }) => {
   await page.goto('/');
   for (const [label, href] of ROWS) {
     const row = page.getByRole('region', { name: label, exact: true });
@@ -521,14 +516,34 @@ test('Handy: Reihen lassen sich wischen und enden mit "Alle ansehen"', async ({ 
   await expect(page.locator('.village-card')).toHaveCount(6);
 });
 
-test('Desktop: Reihen als Raster, "Alle ansehen"-Karten ausgeblendet', async ({ page, isMobile }) => {
-  test.skip(isMobile, 'nur Desktop');
+test('Desktop: Blätter-Knöpfe an den Reihen', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'Knöpfe nur mit Maus');
   await page.goto('/');
-  for (const [label] of ROWS) {
-    const row = page.getByRole('region', { name: label, exact: true });
-    expect(await row.evaluate((el) => getComputedStyle(el).gridAutoFlow)).toBe('row');
-    await expect(row.locator('a.more-card')).toBeHidden();
+  const wrap = page.locator('[data-row-wrap]').filter({ has: page.getByRole('region', { name: 'Dorfleben & Tradition', exact: true }) });
+  const row = wrap.locator('[data-scroll-row]');
+  await wrap.scrollIntoViewIfNeeded();
+  const prev = wrap.locator('[data-row-prev]');
+  const next = wrap.locator('[data-row-next]');
+  await expect(prev).toBeDisabled(); // am Anfang
+  await expect(next).toBeEnabled();
+  await next.click();
+  await expect.poll(() => row.evaluate((el) => el.scrollLeft)).toBeGreaterThan(50);
+  await expect(prev).toBeEnabled();
+  for (let k = 0; k < 8; k++) {
+    if (await next.isDisabled()) break;
+    // Knopf kann während des sanften Scrollens deaktiviert werden – dann ist das Ende erreicht
+    await next.click({ timeout: 2000 }).catch(() => {});
+    await page.waitForTimeout(500);
   }
+  await expect(next).toBeDisabled({ timeout: 3000 }); // am Ende
+  await expect(row.locator('a.more-card')).toBeInViewport();
+  await prev.click();
+  await expect(next).toBeEnabled();
+  // Tastatur: Pfeiltasten in der fokussierten Reihe
+  await row.evaluate((el) => el.scrollTo({ left: 0, behavior: 'instant' }));
+  await row.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => row.evaluate((el) => el.scrollLeft)).toBeGreaterThan(50);
 });
 
 test('360° auf der Startseite: Karte antippen wählt die Jahreszeit', async ({ page }) => {
@@ -652,8 +667,7 @@ test('Karte zeigt Satellitenbild; Ansicht über das Symbol oben rechts wählbar 
 });
 
 /* ---------- Handy: Bild frei, Knöpfe darunter ---------- */
-test('Handy: im Bild nur Wetter, Foto und Überschrift – Knöpfe und Steuerung unter dem Bild, darunter die Zahlen', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'nur Handy');
+test('Alle Bildschirme: im Bild nur Wetter, Foto und Überschrift – Knöpfe und Steuerung unter dem Bild, darunter die Zahlen', async ({ page }) => {
   await page.goto('/');
   const media = await page.locator('.hero-media').boundingBox();
   const inside = async (sel) => {
@@ -675,8 +689,7 @@ test('Handy: im Bild nur Wetter, Foto und Überschrift – Knöpfe und Steuerung
 });
 
 /* ---------- "Alle ansehen" mit Foto ---------- */
-test('"Alle ansehen"-Karten haben ein Foto im Hintergrund', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'nur Handy sichtbar');
+test('"Alle ansehen"-Karten haben ein Foto im Hintergrund', async ({ page }) => {
   await page.goto('/');
   const cards = page.locator('a.more-card');
   await expect(cards).toHaveCount(4);
@@ -709,4 +722,82 @@ test('Karte: Umschalter zu Google Maps zeigt das Dorf in Google Maps (Satellit)'
   await expect(map.locator('[data-map-canvas]')).toBeVisible();
   await expect(page.locator('[data-map-filter]').first()).toBeEnabled();
   await expect(map).toHaveAttribute('data-view', 'own');
+});
+
+/* ---------- Fehler: seitliches Scrollen darf nie an den Seitenanfang / zurück führen ---------- */
+test('Seitliches Scrollen in den Reihen bleibt auf der Seite (kein Sprung nach oben, keine Zurück-Navigation)', async ({ page, isMobile }) => {
+  // Vorherige Seite im Verlauf – "Zurück" würde dorthin führen
+  await page.goto('/blog');
+  await page.goto('/');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).overscrollBehaviorX)).toBe('none');
+  for (const label of ['Ausflugsziele', 'Dorfleben & Tradition', '360°-Ansicht wählen', 'Aktuelle Beiträge']) {
+    const row = page.getByRole('region', { name: label, exact: true });
+    await row.scrollIntoViewIfNeeded();
+    expect(await row.evaluate((el) => getComputedStyle(el).overscrollBehaviorX)).toBe('contain');
+    const y0 = await page.evaluate(() => window.scrollY);
+    expect(y0).toBeGreaterThan(200);
+    if (isMobile) {
+      // Wischen simulieren: Reihe bis ans Ende und wieder zurück scrollen
+      for (const left of [150, 400, 99999, 0, 99999]) {
+        await row.evaluate((el, l) => el.scrollTo({ left: l, behavior: 'instant' }), left);
+        await page.waitForTimeout(80);
+      }
+    } else {
+      // Trackpad / Shift+Mausrad: seitlich scrollen – auch über das Ende hinaus
+      const box = await row.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      for (let k = 0; k < 12; k++) {
+        await page.mouse.wheel(400, 0);
+        await page.waitForTimeout(40);
+      }
+      await expect.poll(() => row.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100);
+      for (let k = 0; k < 14; k++) await page.mouse.wheel(-400, 0);
+    }
+    await page.waitForTimeout(200);
+    expect(page.url()).toMatch(/\/$/); // immer noch Startseite
+    const y1 = await page.evaluate(() => window.scrollY);
+    expect(Math.abs(y1 - y0), `${label}: Seite darf nicht springen`).toBeLessThan(5);
+  }
+  expect(await page.evaluate(() => history.length)).toBeGreaterThanOrEqual(2);
+});
+
+test('Gesamte Seite: kein horizontales Verrutschen auf allen Unterseiten', async ({ page }) => {
+  for (const path of PAGES) {
+    await page.goto(path);
+    const r = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
+    expect(r.sw, path).toBeLessThanOrEqual(r.w);
+    await page.mouse.wheel(600, 0);
+    expect(await page.evaluate(() => window.scrollX), path).toBe(0);
+  }
+});
+
+test('Alle internen Links der Startseite funktionieren (Status 200)', async ({ page }) => {
+  await page.goto('/');
+  const hrefs = await page.locator('a[href^="/"]').evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute('href')))]);
+  expect(hrefs.length).toBeGreaterThan(10);
+  for (const href of hrefs) {
+    const res = await page.request.get(href);
+    expect(res.status(), href).toBe(200);
+  }
+});
+
+test('Klick auf jede Karte in den Reihen führt zur richtigen Seite', async ({ page }) => {
+  await page.goto('/');
+  // Beitrag
+  const article = page.getByRole('region', { name: 'Aktuelle Beiträge', exact: true }).locator('.article-card h3 a').first();
+  const title = (await article.textContent()).trim();
+  await article.scrollIntoViewIfNeeded();
+  await article.click();
+  await expect(page.locator('h1')).toHaveText(title);
+  await page.goBack();
+  // "Alle ansehen" jeder Reihe
+  for (const [label, href, heading] of [['Ausflugsziele', '/ausflugsziele', 'Routen & Ausflugsziele'], ['Aktuelle Beiträge', '/blog', 'Neuigkeiten aus dem Dorf'], ['360°-Ansicht wählen', '/panorama', 'Rundblick durch das Jahr']]) {
+    await page.goto('/');
+    const row = page.getByRole('region', { name: label, exact: true });
+    await row.evaluate((el) => el.scrollTo({ left: el.scrollWidth, behavior: 'instant' }));
+    await row.locator('a.more-card').scrollIntoViewIfNeeded();
+    await row.locator('a.more-card').click();
+    await expect(page).toHaveURL(new RegExp(`${href}$`));
+    await expect(page.locator('h1')).toHaveText(heading);
+  }
 });

@@ -95,7 +95,7 @@
 
 /* ---------- Basis ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--header) + 16px); }
+html { overscroll-behavior-x: none; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--header) + 16px); }
 body {
   margin: 0;
   background: var(--paper);
@@ -318,25 +318,13 @@ main { display: block; outline: none; }
 .sound-caption::before { content: '♪'; opacity: .8; }
 
 @media (min-width: 640px) {
+  /* Gleiches Layout wie am Handy: im Bild nur Wetter, Foto, Überschrift – Knöpfe und Steuerung darunter */
   .hero { padding-inline: var(--gutter); margin-top: 8px; }
-  .hero-media { height: clamp(540px, 76vh, 760px); }
-  .hero-media { min-height: 540px; }
-  .hero-content {
-    display: flex; flex-direction: column; grid-area: 1 / 1; align-self: end; position: relative; z-index: 2;
-    padding: 0 40px 40px; color: #fff; pointer-events: none;
-  }
-  .hero-content > * { pointer-events: auto; }
-  .hero-content h1 { padding: 0; margin-bottom: 22px; pointer-events: none; }
-  .hero-bar { margin-top: 0; }
-  .hero-bar .btn--light { background: #fff; color: #111; border-color: #fff; }
-  .hero-bar .btn--ghost-light { background: rgb(255 255 255 / .1); color: #fff; border-color: rgb(255 255 255 / .6); backdrop-filter: blur(6px); }
-  .hero-bar .btn--ghost-light:hover { background: rgb(255 255 255 / .2); }
-  .carousel-controls { width: 64%; min-width: 420px; margin-top: 18px; background: rgb(20 20 20 / .5); border: 0; }
-  .sound-caption { color: rgb(255 255 255 / .9); }
-  .hero-content .actions .btn { flex: 0 0 auto; }
-  .hero-text { font-size: 1.2rem; margin-bottom: 28px; }
+  .hero-media { height: clamp(500px, 72vh, 720px); min-height: 500px; }
+  .hero-content h1 { padding: 0 40px 36px; }
+  .hero-bar { margin-top: 18px; width: 100%; max-width: 760px; }
   .weather-chip { left: 22px; top: 22px; }
-  .slide-credit { top: auto; bottom: 12px; right: 16px; }
+  .slide-credit { top: 22px; right: 22px; }
 }
 
 /* ---------- Fakten ---------- */
@@ -418,8 +406,22 @@ main { display: block; outline: none; }
 .grid--scroll::-webkit-scrollbar { display: none; }
 .grid--scroll > * { scroll-snap-align: start; }
 .grid--scroll:focus-visible { outline-offset: -2px; }
+.row-wrap { position: relative; }
+.row-nav { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .row-nav {
+    position: absolute; z-index: 3; top: 50%; translate: 0 -50%;
+    display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px;
+    border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer;
+    box-shadow: var(--shadow); transition: opacity .2s, transform .15s;
+  }
+  .row-nav:hover { transform: scale(1.06); }
+  .row-nav:disabled { opacity: 0; pointer-events: none; }
+  .row-nav--prev { left: -8px; }
+  .row-nav--next { right: -8px; }
+}
 
-/* "Alle ansehen" am Ende einer Reihe (nur Handy – am Desktop steht der Link oben rechts) */
+/* "Alle ansehen" am Ende jeder Reihe */
 .more-card {
   display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 6px;
   min-height: 180px; padding: 22px; border-radius: var(--r); text-decoration: none;
@@ -436,9 +438,7 @@ main { display: block; outline: none; }
 .more-card--image:hover .more-card-bg { transform: scale(1.05); }
 .more-card--image .more-card-icon { background: rgb(255 255 255 / .92); color: #111; }
 .more-card--image .more-card-count { opacity: .85; }
-@media (min-width: 640px) { .more-card { display: none; } }
 @media (min-width: 640px) {
-  .grid--scroll { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; margin-inline: 0; padding: 0; }
   .grid { gap: 20px; }
   .grid--2, .grid--3, .grid--4 { grid-template-columns: repeat(2, 1fr); }
 }
@@ -446,6 +446,10 @@ main { display: block; outline: none; }
   .grid--3 { grid-template-columns: repeat(3, 1fr); }
   .grid--4 { grid-template-columns: repeat(4, 1fr); }
 }
+/* Reihen bleiben auch auf grösseren Bildschirmen eine wischbare Reihe – die nächste Karte schaut hervor */
+.grid.grid--scroll { grid-template-columns: none; }
+@media (min-width: 640px) { .grid.grid--scroll { grid-auto-columns: calc((100% - 2 * var(--gutter) - 20px) / 2.25); } }
+@media (min-width: 1080px) { .grid.grid--scroll { grid-auto-columns: calc((100% - 2 * var(--gutter) - 40px) / 3.25); } }
 
 .card {
   position: relative; display: flex; flex-direction: column;
