@@ -54,8 +54,9 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 ## Ein Layout für alle Bildschirme
 
 Die Website sieht auf Handy, Tablet und Computer gleich aus (Handy-Layout als Vorlage). Einziger Unterschied:
-**Karussell und 360°** sind auf dem Handy im **Hochformat 9:16**, ab 768 px Breite im **Querformat 16:9** –
-immer exakt und so gross, dass das ganze Bild auf den Bildschirm passt.
+**Karussell und 360°** sind auf dem Handy im **Hochformat 9:16**, ab 768 px Breite (oder Handy quer) im **Querformat 16:9**.
+Das Karussell ist immer so breit wie alle anderen Abschnitte (gleicher Rand); ist der Bildschirm niedriger als das Bild,
+wird es oben/unten etwas zugeschnitten. Auf grossen Bildschirmen steht das Wetter zweispaltig (links aktuell, rechts 7 Tage).
 
 **Brauche ich zwei Fotos pro Bild?** Nein. Für Unsplash-Fotos wird automatisch der passende Ausschnitt erzeugt
 (intelligenter Zuschnitt auf den interessantesten Bildteil). Für eigene Fotos in `data/site.json` → `hero.slides`:
@@ -64,7 +65,9 @@ immer exakt und so gross, dass das ganze Bild auf den Bildschirm passt.
 
 ## Startbild: Karussell mit Naturklängen
 
-- 5 Bilder wechseln alle 6 Sekunden und **zoomen langsam hinein**.
+- 5 Bilder wechseln alle 6 Sekunden und **zoomen langsam hinein**. Der Balken des aktuellen Bildes füllt sich wie ein
+  Ladebalken; ist er voll, kommt das nächste Bild. Die Diashow läuft weiter, auch wenn die Maus über dem Bild ist –
+  anhalten mit dem Pause-Knopf (bzw. automatisch beim Runterscrollen).
 - **Auf allen Bildschirmen gleich (Handy-Layout):** Im Bild stehen nur Wetter, Fotonachweis und „Willkommen in Steinbach“ –
   die Knöpfe *Entdecken* / *360° ansehen* und die Steuerleiste liegen **unter dem Bild**, damit das ganze Foto sichtbar ist.
 - Eine **grosse Steuerleiste** (ganze Breite auf dem Handy, ~60 % der Bildbreite am Computer):
@@ -79,11 +82,12 @@ immer exakt und so gross, dass das ganze Bild auf den Bildschirm passt.
 
 ## Wischbare Reihen
 
-Jeder Abschnitt der Startseite ist gleich aufgebaut: **eine Reihe mit höchstens 4 Karten, danach „Alle ansehen“** –
-Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten, Galerie, Videos und Aktuelles. Oben rechts steht zusätzlich
+Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten und Aktuelles sind gleich aufgebaut: **eine Reihe mit höchstens
+4 Karten, danach „Alle ansehen“**. Die **Galerie** ist ein Mosaik mit 9 Bildern, bei den **Videos** stehen 2 Videos und
+daneben „Alle Videos“. Oben rechts steht zusätzlich
 der Link zur Übersicht. Die Reihen stehen auf allen Bildschirmen **in einer Linie**
 zum seitlichen Scrollen (Wischen, Trackpad, Shift+Mausrad, Pfeiltasten oder die runden Blätter-Knöpfe am Computer). Am Ende jeder Reihe führt die Karte **„Alle ansehen“** (mit Foto im Hintergrund) zur Übersichtsseite
-(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/galerie`, `/videos`, `/blog`). Seitliches Scrollen löst nie die „Zurück“-Geste des Browsers aus
+(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/blog`). Seitliches Scrollen löst nie die „Zurück“-Geste des Browsers aus
 und lässt die Seite nicht springen.
 
 ## Karte mit Routen – direkt aus Google Maps
@@ -226,7 +230,7 @@ npm run test:e2e       # echte Browser, Desktop + Handy (Playwright + axe)
 
 Für die Browser-Tests einmalig `npx playwright install chromium` ausführen (oder Google Chrome installiert haben).
 
-Geprüft werden u. a.: **Layout bei 390, 768, 1280 und 1920 px Breite** (eine Linie, max. 4 Karten + „Alle ansehen“), Bildformat 9:16/16:9 inkl. Drehen des Handys, Ton standardmässig an, **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Satellit als Standard, Ansicht wechseln und merken, Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
+Geprüft werden u. a.: **Startbild bei 11 Bildschirmgrössen von 320 bis 2560 px** (volle Breite, Überschrift im Bild), Ladebalken des Karussells, Galerie-Mosaik, Videos, Wetter zweispaltig, **Layout bei 390, 768, 1280 und 1920 px Breite** (eine Linie, max. 4 Karten + „Alle ansehen“), Bildformat 9:16/16:9 inkl. Drehen des Handys, Ton standardmässig an, **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Satellit als Standard, Ansicht wechseln und merken, Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
 Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch lokale Daten ersetzt – die Tests laufen auch ohne Internet.
 
 ## Platzhalter-Bilder neu erzeugen (optional, Python)

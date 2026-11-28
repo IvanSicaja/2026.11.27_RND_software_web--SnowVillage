@@ -454,7 +454,8 @@ test('Steuerleiste: gross, mindestens 50 % der Bildbreite, direkt unter dem Bild
 });
 
 // Erste Berührung auf der Seite (gibt den Ton frei – Browser-Regel), ohne einen Link zu treffen
-const firstTap = (page) => page.locator('.facts').click({ position: { x: 5, y: 5 } });
+// Tippen mitten ins Bild (kein Link, kein Scrollen)
+const firstTap = (page) => page.locator('.hero-media').click({ position: { x: 40, y: 160 } });
 
 test('Naturklang ist standardmässig an, startet spätestens beim ersten Tippen, wechselt mit dem Bild', async ({ page }) => {
   const errors = collectErrors(page);
@@ -463,7 +464,7 @@ test('Naturklang ist standardmässig an, startet spätestens beim ersten Tippen,
   const btn = page.locator('[data-carousel-sound]');
   await expect(btn).toHaveAttribute('aria-pressed', 'true');
   await expect(btn).toHaveAttribute('aria-label', 'Naturklang ausschalten');
-  await expect(carousel).toHaveAttribute('data-sound-state', /^(waiting|playing)$/, { timeout: 10_000 });
+  await expect(carousel).toHaveAttribute('data-sound-state', /^(waiting|loading|playing)$/, { timeout: 10_000 });
   await expect(carousel).toHaveAttribute('data-sound-src', '/audio/kirche-voegel.mp3');
   await firstTap(page);
   await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
@@ -504,6 +505,9 @@ test('Naturklang ausschalten wird gemerkt, wieder einschalten funktioniert', asy
   await expect(btn).toHaveAttribute('aria-pressed', 'false');
   await page.waitForTimeout(800);
   await expect(carousel).not.toHaveAttribute('data-sound-state', /.+/); // bleibt aus, nichts geladen
+  // Browser stellt beim Neuladen die Scrollposition wieder her → nach oben, damit das Startbild sichtbar ist
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(carousel).toHaveAttribute('data-in-view', 'true');
   await btn.click();
   await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
   await page.reload();
@@ -529,8 +533,6 @@ const ROWS = [
   ['Ausflugsziele', '/ausflugsziele'],
   ['Dorfleben & Tradition', '/dorfleben'],
   ['360°-Ansicht wählen', '/panorama'],
-  ['Galerie', '/galerie'],
-  ['Videos', '/videos'],
   ['Aktuelle Beiträge', '/blog'],
 ];
 
@@ -641,6 +643,7 @@ test('Runterscrollen pausiert den Naturklang, Hochscrollen spielt weiter', async
   const carousel = page.locator('[data-carousel]');
   await firstTap(page);
   await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  await expect(carousel).toHaveAttribute('data-sound-src', /\.mp3$/);
   const src = await carousel.getAttribute('data-sound-src');
 
   await page.locator('.site-footer').scrollIntoViewIfNeeded();
@@ -651,7 +654,7 @@ test('Runterscrollen pausiert den Naturklang, Hochscrollen spielt weiter', async
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await expect(carousel).toHaveAttribute('data-sound-state', 'playing');
   await expect(carousel).toHaveAttribute('data-sound-src', src); // derselbe Klang, kein Neustart
-  expect(errors).toEqual([]);
+  expect(errors, `Fehler: ${errors.join(' | ')}`).toEqual([]);
 });
 
 /* ---------- Karte: Satellit als Standard, Ansicht wählbar ---------- */
@@ -732,10 +735,10 @@ test('Alle Bildschirme: im Bild nur Wetter, Foto und Überschrift – Knöpfe un
 test('"Alle ansehen"-Karten haben ein Foto im Hintergrund', async ({ page }) => {
   await page.goto('/');
   const cards = page.locator('a.more-card');
-  await expect(cards).toHaveCount(6);
+  await expect(cards).toHaveCount(5); // Ziele, Dorfleben, 360°, Videos, Aktuelles
   for (const card of await cards.all()) {
     await expect(card).toHaveClass(/more-card--image/);
-    await card.evaluate((el) => el.closest('[data-scroll-row]').scrollTo({ left: 99999, behavior: 'instant' }));
+    await card.evaluate((el) => el.closest('[data-scroll-row]')?.scrollTo({ left: 99999, behavior: 'instant' }));
     await card.scrollIntoViewIfNeeded();
     const img = card.locator('img.more-card-bg');
     await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth)).toBeGreaterThan(0);
@@ -882,9 +885,19 @@ for (const [w, h] of WIDTHS) {
 test('Karussell und 360°: Handy Hochformat 9:16, Computer Querformat 16:9 – passende Bildzuschnitte', async ({ page, isMobile }) => {
   await page.goto('/');
   const media = await page.locator('.hero-media').boundingBox();
+  const vp = page.viewportSize();
+  const headerH = (await page.locator('.site-header').boundingBox()).height;
+  const capped = Math.abs(media.height - (vp.height - headerH - 24)) < 2; // höher als der Bildschirm → begrenzt
   const ratio = media.width / media.height;
-  if (isMobile) expect(ratio).toBeCloseTo(9 / 16, 1);
-  else expect(ratio).toBeCloseTo(16 / 9, 1);
+  if (!capped) {
+    if (isMobile) expect(ratio).toBeCloseTo(9 / 16, 1);
+    else expect(ratio).toBeCloseTo(16 / 9, 1);
+  } else {
+    expect(ratio).toBeGreaterThan(isMobile ? 9 / 16 : 16 / 9);
+  }
+  // Volle Breite wie die anderen Abschnitte
+  const facts = await page.locator('.facts-grid').boundingBox();
+  expect(Math.abs(media.width - facts.width)).toBeLessThan(isMobile ? 20 : 4);
   // Geladenes Bild hat das passende Format (Unsplash-Zuschnitt w×h)
   const src = await page.locator('[data-slide].is-active img').evaluate((i) => i.currentSrc);
   const w = Number(new URL(src).searchParams.get('w'));
@@ -905,6 +918,11 @@ test('Drehen des Handys (hoch → quer) wechselt das Karussell-Format ohne Neula
   await page.goto('/');
   let b = await page.locator('.hero-media').boundingBox();
   expect(b.width / b.height).toBeCloseTo(9 / 16, 1);
+  await page.setViewportSize({ width: 932, height: 430 }); // Handy quer
+  await page.waitForTimeout(300);
+  b = await page.locator('.hero-media').boundingBox();
+  expect(b.width / b.height).toBeGreaterThan(1.5); // Querformat
+  await expect(page.locator('.hero h1')).toBeVisible();
   await page.setViewportSize({ width: 932, height: 1400 });
   await page.waitForTimeout(300);
   b = await page.locator('.hero-media').boundingBox();
@@ -914,23 +932,132 @@ test('Drehen des Handys (hoch → quer) wechselt das Karussell-Format ohne Neula
   expect(Number(u.get('w'))).toBeGreaterThan(Number(u.get('h')));
 });
 
-test('Galerie-Reihe auf der Startseite öffnet die Vollbildansicht', async ({ page }) => {
+test('Galerie auf der Startseite: Mosaik mit 9 Bildern, Vollbildansicht funktioniert', async ({ page, isMobile }) => {
   await page.goto('/');
-  const card = page.getByRole('region', { name: 'Galerie', exact: true }).locator('[data-gallery-item]').first();
-  await card.scrollIntoViewIfNeeded();
-  await card.click();
+  const items = page.locator('ul.gallery[data-gallery] [data-gallery-item]');
+  await expect(items).toHaveCount(9);
+  // Mosaik: mehrere Spalten
+  const xs = new Set(await items.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left))));
+  expect(xs.size).toBeGreaterThanOrEqual(isMobile ? 2 : 3);
+  await expect(page.locator('section:has(ul.gallery) a.link-arrow[href="/galerie"]')).toBeVisible();
+  await items.nth(4).scrollIntoViewIfNeeded(); // ein Bild in der Mitte
+  await items.nth(4).click();
   const dialog = page.locator('[data-lightbox]');
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('[data-lightbox-count]')).toHaveText('1 / 4');
+  await expect(dialog.locator('[data-lightbox-count]')).toHaveText('5 / 9');
   await dialog.getByRole('button', { name: 'Schliessen' }).click();
   await expect(dialog).toBeHidden();
 });
 
-test('Video-Reihe auf der Startseite spielt ein Video ab', async ({ page }) => {
+test('Videos auf der Startseite: 2 Videos und daneben "Alle Videos"', async ({ page, isMobile }) => {
   await page.goto('/');
-  const row = page.getByRole('region', { name: 'Videos', exact: true });
-  const play = row.getByRole('link', { name: /Video abspielen/ }).first();
+  const grid = page.locator('.grid--videos');
+  await expect(grid.locator('.video-card')).toHaveCount(2);
+  const more = grid.locator('a.more-card');
+  await expect(more).toHaveAttribute('href', '/videos');
+  await expect(more).toContainText('Alle Videos');
+  if (!isMobile) {
+    const v = await grid.locator('.video-card').nth(1).boundingBox();
+    const m = await more.boundingBox();
+    expect(m.x).toBeGreaterThan(v.x + v.width - 1); // in derselben Zeile rechts
+  }
+  const play = grid.getByRole('link', { name: /Video abspielen/ }).first();
   await play.scrollIntoViewIfNeeded();
   await play.click();
-  await expect(row.locator('iframe').first()).toHaveAttribute('src', /youtube-nocookie\.com\/embed\//);
+  await expect(grid.locator('iframe').first()).toHaveAttribute('src', /youtube-nocookie\.com\/embed\//);
+  await more.click();
+  await expect(page).toHaveURL(/\/videos$/);
+});
+
+/* ---------- Ladebalken im Karussell läuft immer (auch mit Maus über dem Bild) ---------- */
+test('Karussell: Ladebalken füllt sich, dann nächstes Bild – auch mit Maus über dem Bild und nach Antippen', async ({ page, isMobile }) => {
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  const fill = page.locator('[data-carousel-dot][aria-current="true"] .dot-fill');
+  await expect.poll(() => fill.evaluate((e) => getComputedStyle(e).animationName)).toBe('dot-progress');
+  expect(await fill.evaluate((e) => getComputedStyle(e).animationPlayState)).toBe('running');
+  const w1 = await fill.evaluate((e) => e.getBoundingClientRect().width);
+  await page.waitForTimeout(1500);
+  const w2 = await fill.evaluate((e) => e.getBoundingClientRect().width);
+  expect(w2).toBeGreaterThan(w1); // füllt sich
+  // Maus über dem Bild: läuft weiter
+  if (!isMobile) {
+    const m = await page.locator('.hero-media').boundingBox();
+    await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2);
+  }
+  await expect(carousel).toHaveAttribute('data-index', '1', { timeout: 9000 });
+  // Bild-Balken antippen: läuft danach von dort weiter
+  await page.getByRole('button', { name: 'Bild 4 anzeigen' }).click();
+  await expect(carousel).toHaveAttribute('data-index', '3');
+  await expect(carousel).toHaveAttribute('data-index', '4', { timeout: 9000 });
+  expect(await page.locator('[data-carousel-dot][aria-current="true"] .dot-fill').evaluate((e) => getComputedStyle(e).animationName)).toBe('dot-progress');
+});
+
+/* ---------- Überschrift bleibt bei jeder Bildschirmgrösse im Bild ---------- */
+for (const [w, h] of [[320, 640], [360, 780], [390, 844], [600, 960], [767, 1024], [768, 1024], [844, 390], [1024, 768], [1280, 720], [1920, 1080], [2560, 1440]]) {
+  test(`Startbild ${w}×${h}: volle Breite, "Willkommen in Steinbach" ganz im Bild`, async ({ page, isMobile }) => {
+    test.skip(isMobile, 'im Desktop-Browser simuliert');
+    await page.setViewportSize({ width: w, height: h });
+    await page.goto('/');
+    const media = await page.locator('.hero-media').boundingBox();
+    const title = await page.locator('.hero h1').boundingBox();
+    expect(title.x).toBeGreaterThanOrEqual(media.x - 1);
+    expect(title.x + title.width).toBeLessThanOrEqual(media.x + media.width + 1);
+    expect(title.y).toBeGreaterThanOrEqual(media.y - 1);
+    expect(title.y + title.height).toBeLessThanOrEqual(media.y + media.height + 1);
+    // Text selbst läuft nicht über (keine abgeschnittenen Wörter)
+    expect(await page.locator('.hero h1').evaluate((e) => e.scrollWidth <= e.clientWidth + 1)).toBe(true);
+    // Volle Breite: gleicher Rand wie die Abschnitte darunter
+    const facts = await page.locator('.facts-grid').boundingBox();
+    expect(Math.abs(media.x - facts.x)).toBeLessThan(w < 640 ? 12 : 2);
+    expect(Math.abs((media.x + media.width) - (facts.x + facts.width))).toBeLessThan(w < 640 ? 12 : 2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  });
+}
+
+/* ---------- Wetter nutzt auf grossen Bildschirmen den Platz ---------- */
+test('Wetter auf grossem Bildschirm: links aktuell, rechts 7 Tage, volle Breite', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'nur grosser Bildschirm');
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/');
+  const card = page.locator('[data-weather]');
+  await expect(card).toBeVisible();
+  const c = await card.boundingBox();
+  const main = await card.locator('.weather-main').boundingBox();
+  const table = await card.locator('table[data-w-forecast]').boundingBox();
+  const facts = await page.locator('.facts-grid').boundingBox();
+  expect(c.width).toBeGreaterThan(facts.width - 4); // ganze Breite
+  expect(table.x).toBeGreaterThan(main.x + main.width); // Tabelle rechts daneben
+  expect(Math.abs(table.y - c.y)).toBeLessThan(80); // oben auf gleicher Höhe
+  await expect(card.locator('tbody tr')).toHaveCount(8);
+});
+
+test('Naturklang: Bild antippen und gleich danach "aus" – das Ausschalten wird nicht verschluckt', async ({ page }) => {
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  await firstTap(page);
+  await page.locator('[data-carousel-sound]').click(); // sofort danach
+  await expect(carousel).toHaveAttribute('data-sound-state', 'off');
+  await expect(page.locator('[data-carousel-sound]')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('Naturklang: Status "playing" erst, wenn der Klang wirklich läuft (Datei geladen)', async ({ page }) => {
+  // Klangdatei künstlich verzögern
+  await page.route('**/audio/*.mp3', async (r) => {
+    await new Promise((res) => setTimeout(res, 1200));
+    await r.continue();
+  });
+  const states = [];
+  await page.exposeFunction('__state', (s) => states.push(s));
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const c = document.querySelector('[data-carousel]');
+      new MutationObserver(() => window.__state(`${c.dataset.soundState}|${c.dataset.soundSrc || ''}`)).observe(c, { attributes: true, attributeFilter: ['data-sound-state', 'data-sound-src'] });
+    });
+  });
+  await page.goto('/');
+  await firstTap(page);
+  await expect(page.locator('[data-carousel]')).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  // Jeder "playing"-Zustand hat eine geladene Datei
+  for (const st of states.filter((x) => x.startsWith('playing'))) expect(st).toMatch(/\.mp3$/);
 });

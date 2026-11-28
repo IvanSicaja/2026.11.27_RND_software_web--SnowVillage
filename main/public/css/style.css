@@ -240,23 +240,23 @@ main { display: block; outline: none; }
    damit das ganze Bild sichtbar ist. Ab Tablet liegt alles wie gewohnt im Bild. */
 .hero {
   position: relative; margin-top: 4px; padding-inline: 8px; display: grid; grid-template-columns: minmax(0, 1fr);
-  /* Bildbreite so, dass das Format exakt bleibt und das ganze Bild auf den Bildschirm passt */
-  --hero-w: min(100%, calc((100svh - var(--header) - 24px) * 9 / 16));
 }
 .hero-media {
   grid-area: 1 / 1; position: relative; border-radius: var(--r-lg); overflow: hidden; background: #2b2b2b;
-  /* Handy: Hochformat 9:16, ab 768 px Querformat 16:9 – immer exakt */
-  aspect-ratio: 9 / 16; width: var(--hero-w); justify-self: center;
+  /* Volle Breite wie alle anderen Abschnitte. Handy hochkant: 9:16, sonst (ab 768 px oder quer): 16:9.
+     Höchstens so hoch wie der Bildschirm – dann wird oben/unten etwas vom Bild abgeschnitten. */
+  aspect-ratio: 9 / 16; width: 100%; max-height: calc(100svh - var(--header) - 24px);
 }
 .carousel-slide picture { display: block; width: 100%; height: 100%; }
+@media (min-width: 768px), (orientation: landscape) {
+  .hero-media { aspect-ratio: 16 / 9; }
+}
 @media (min-width: 768px) {
   .hero-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
   .hero-bar .actions { flex: none; flex-wrap: nowrap; }
   .hero-content .hero-bar .actions .btn { flex: none; min-width: 150px; }
   .hero-bar .carousel-controls { flex: 1; min-width: 360px; width: auto; margin-top: 0; }
   .hero-bar .sound-caption { flex-basis: 100%; margin-top: 0; }
-  .hero { --hero-w: min(100%, calc((100svh - var(--header) - 110px) * 16 / 9)); }
-  .hero-media { aspect-ratio: 16 / 9; }
 }
 .carousel-slide {
   position: absolute; inset: 0; opacity: 0;
@@ -278,8 +278,11 @@ main { display: block; outline: none; }
 }
 .slide-credit:hover { text-decoration: underline; }
 .hero-content { display: contents; }
-.hero-content h1 { grid-area: 1 / 1; align-self: end; justify-self: center; width: var(--hero-w); position: relative; z-index: 2; color: #fff; margin: 0; padding: 0 20px 22px; pointer-events: none; }
-.hero-bar { grid-area: 2 / 1; justify-self: center; width: var(--hero-w); margin-top: 14px; }
+.hero-content h1 {
+  grid-area: 1 / 1; align-self: end; position: relative; z-index: 2; color: #fff; margin: 0; padding: 0 20px 22px; pointer-events: none;
+  font-size: clamp(1.9rem, 7.5vw, 4.25rem); overflow-wrap: anywhere; max-width: 100%;
+}
+.hero-bar { grid-area: 2 / 1; width: 100%; margin-top: 14px; }
 .hero-bar .btn--light { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
 .hero-bar .btn--ghost-light { background: transparent; color: var(--ink); border-color: var(--stone-2); backdrop-filter: none; }
 .hero-bar .btn--ghost-light:hover { background: var(--stone); }
@@ -325,8 +328,8 @@ main { display: block; outline: none; }
 .carousel-dot.is-done .dot-fill { width: 100%; }
 .carousel-dot[aria-current='true'] .dot-fill { width: 100%; }
 .carousel-dot[aria-current='true'].is-running .dot-fill { animation: dot-progress var(--slide-delay, 6s) linear forwards; }
-.carousel-controls.is-paused .carousel-dot[aria-current='true'] .dot-fill,
-.carousel-controls.is-holding .carousel-dot[aria-current='true'] .dot-fill { animation: none; width: 100%; }
+.carousel-controls.is-paused .carousel-dot[aria-current='true'] .dot-fill { animation: none; width: 100%; }
+.carousel-controls.is-holding .carousel-dot[aria-current='true'] .dot-fill { animation-play-state: paused; }
 @keyframes dot-progress { from { width: 0; } to { width: 100%; } }
 .carousel-dot:focus-visible, .carousel-btn:focus-visible { outline: 2px solid #fff; outline-offset: -2px; border-radius: 12px; }
 .sound-caption { margin: 10px 4px 0; font-size: .85rem; color: var(--muted); display: flex; gap: 8px; align-items: center; }
@@ -363,9 +366,23 @@ main { display: block; outline: none; }
 .intro h2 { max-width: 20ch; }
 .intro .eyebrow { color: var(--wood); }
 .intro-text { color: var(--muted); max-width: 62ch; }
-.intro-grid { display: grid; gap: 24px; align-items: start; }
+.intro-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 380px) {
+  .weather.panel { padding: 18px 14px; }
+  .forecast-day { width: 3.6rem; }
+  .forecast .num { width: 2.6rem; padding-left: 4px; }
+  .forecast-icon { display: none; }
+}
 /* Wie am Handy: Text und Wetter untereinander (auf allen Bildschirmen) */
-.intro-grid .weather { max-width: 760px; }
+/* Grosse Bildschirme: Wetter nutzt die volle Breite – links "jetzt", rechts die 7-Tage-Tabelle */
+@media (min-width: 960px) {
+  .weather { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.9fr); column-gap: 48px; align-content: start; padding: 32px 36px; }
+  .weather > .eyebrow, .weather > .weather-main, .weather > .weather-meta, .weather > .weather-source { grid-column: 1; }
+  .weather > .weather-sub { grid-column: 2; grid-row: 1; margin-top: 0; }
+  .weather > .forecast { grid-column: 2; grid-row: 2 / span 4; align-self: start; }
+  .weather-meta { grid-template-columns: 1fr 1fr 1fr; }
+  .weather-temp { font-size: 3.6rem; }
+}
 
 .weather { display: grid; gap: 4px; background: var(--surface); }
 .weather .eyebrow { color: var(--wood); margin-bottom: 4px; }
@@ -470,6 +487,13 @@ main { display: block; outline: none; }
 .gallery-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / .6)); border-radius: inherit; pointer-events: none; }
 .gallery-card-caption { position: absolute; z-index: 1; left: 16px; right: 16px; bottom: 14px; color: #fff; font-weight: 560; font-size: .98rem; }
 .grid--scroll .video-card { min-width: 0; }
+/* Videos auf der Startseite: 2 Videos + "Alle Videos" */
+.grid--videos { grid-template-columns: 1fr; }
+.grid--videos .more-card { min-height: 0; aspect-ratio: 16 / 9; }
+@media (min-width: 768px) {
+  .grid--videos { grid-template-columns: 1fr 1fr 0.62fr; align-items: start; }
+  .grid--videos .more-card { aspect-ratio: auto; align-self: stretch; }
+}
 
 .card {
   position: relative; display: flex; flex-direction: column;

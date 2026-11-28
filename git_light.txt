@@ -52,18 +52,19 @@ git status
 git log --oneline
 
 git commit -m "
-v0.0.9
+v0.1.0
 
 ### TODOs / To Fix
 
 ### Fixed / Improved
 
 ### Added / New Features
-- applied the exact mobile layout to all screen sizes for full consistency
-- forced every section into a single horizontal row with maximum four items plus more card
-- removed multi column and special desktop layouts
-- set carousel and 360 images to vertical orientation on mobile and horizontal on desktop
-- enabled carousel background sound by default
+- increased carousel width and applied minimal padding matching other sections
+- fixed welcome text overflow during orientation transition
+- restored mosaic layout for gallery with additional images
+- restored videos section to two videos plus all videos card
+- fixed carousel autoplay with progressive button fill
+- improved weather section layout and centering on large screens
 
 ### Additional Comment
 

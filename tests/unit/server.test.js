@@ -195,7 +195,10 @@ test('Startseite: wischbare Reihen enden mit "Alle ansehen"', async () => {
   const body = await (await get('/')).text();
   const rows = [...body.matchAll(/<div class="grid [^"]*grid--scroll[^"]*"[^>]*aria-label="([^"]+)"[^>]*data-scroll-row>([\s\S]*?)<\/div>\s*(?=<\/section>|<\/div>)/g)];
   const more = [...body.matchAll(/<a class="more-card[^"]*" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(more, ['/ausflugsziele', '/dorfleben', '/panorama', '/galerie', '/videos', '/blog']);
+  assert.deepEqual(more, ['/ausflugsziele', '/dorfleben', '/panorama', '/videos', '/blog']);
+  // Galerie als Mosaik mit 9 Bildern, Videos: 2 + "Alle Videos"
+  assert.equal((body.match(/<ul class="gallery" data-gallery>[\s\S]*?<\/ul>/)[0].match(/data-gallery-item/g) || []).length, 9);
+  assert.equal((body.match(/<div class="grid grid--videos">[\s\S]*?class="more-card/)[0].match(/class="video-card/g) || []).length, 2);
   // Jede Reihe: höchstens 4 Karten vor "Alle ansehen"
   for (const m of body.matchAll(/data-scroll-row>([\s\S]*?)<a class="more-card/g)) {
     const n = (m[1].match(/class="(card [^"]*|village-card|pano-card|gallery-item gallery-card|video-card[^"]*)"/g) || []).length;

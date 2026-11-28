@@ -52,7 +52,7 @@ export function unsplash(src, width, ratio, { smart = false } = {}) {
 /* Karussellbild: Hochformat 9:16 fürs Handy, Querformat 16:9 ab Tablet/PC.
    Unsplash schneidet automatisch passend zu. Für eigene Fotos optional "srcHochformat"
    (eigenes Hochformatbild) und "fokus" (z. B. "40% 50%" = wichtigster Bildpunkt). */
-const BREAKPOINT_WIDE = '(min-width: 768px)';
+const BREAKPOINT_WIDE = '(min-width: 768px), (orientation: landscape)';
 function slidePicture(imageVariants, sl, eager) {
   const fokus = typeof sl.fokus === 'string' && /^[\d.]+% [\d.]+%$/.test(sl.fokus) ? sl.fokus : '';
   const style = fokus ? raw(` style="object-position: ${fokus}"`) : '';
@@ -539,21 +539,16 @@ ${villageSection(ctx)}
 
 <section class="container section">
   ${sectionHead('Galerie', '/galerie', 'Alle Bilder')}
-  <div data-gallery>
-  ${scrollRow(media.gallery.slice(0, HOME_LIMIT).map((g, i) => galleryCard(ctx, g, i)), {
-    label: 'Galerie',
-    more: { href: '/galerie', label: 'Alle Bilder', count: media.gallery.length, image: (media.gallery[HOME_LIMIT] || media.gallery[0]).src },
-  })}
-  </div>
+  ${galleryGrid(ctx, media.gallery, { limit: 9 })}
 </section>
 
 ${media.videos.length ? html`
 <section class="container section">
   ${sectionHead('Videos', '/videos', 'Alle Videos')}
-  ${scrollRow(media.videos.slice(0, HOME_LIMIT).map((v) => videoCard(ctx, v)), {
-    label: 'Videos',
-    more: { href: '/videos', label: 'Alle Videos', count: media.videos.length, image: media.videos[HOME_LIMIT]?.poster || media.videos[0].poster },
-  })}
+  <div class="grid grid--videos">
+    ${media.videos.slice(0, 2).map((v) => videoCard(ctx, v))}
+    ${moreCard({ href: '/videos', label: 'Alle Videos', count: media.videos.length, image: media.videos[2]?.poster || media.videos[0].poster })}
+  </div>
 </section>` : ''}
 
 ${latest.length ? html`

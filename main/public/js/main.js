@@ -265,6 +265,7 @@ function initCarousel() {
       else d.removeAttribute('aria-current');
     });
     root.dataset.index = String(index);
+    restartProgress(); // Ladebalken fürs neue Bild neu starten (auch beim automatischen Wechsel)
     renderCaption();
     ambience?.play(slides[index].dataset.sound);
   };
@@ -344,8 +345,8 @@ function initCarousel() {
   };
 
   soundBtn?.addEventListener('click', async () => {
-    // Dieser Klick hat den Ton gerade erst freigegeben → nicht gleich wieder ausschalten
-    if (ambience && performance.now() - ambience.unlockedAt < 600) return;
+    // Genau dieser Klick auf den Ton-Knopf hat den Ton gerade erst freigegeben → nicht gleich wieder ausschalten
+    if (ambience && ambience.unlockedBy && soundBtn.contains(ambience.unlockedBy) && performance.now() - ambience.unlockedAt < 600) return;
     // Klang ist an, wartet aber noch auf Freigabe → jetzt starten
     if (soundBtn.getAttribute('aria-pressed') === 'true' && ambience?.waiting) {
       await startSound({ auto: false });
@@ -368,10 +369,25 @@ function initCarousel() {
     }
   }
 
-  hero.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && (holds++, stop()));
-  hero.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && ((holds = Math.max(0, holds - 1)), start()));
-  hero.addEventListener('focusin', () => (holds++, stop()));
-  hero.addEventListener('focusout', () => ((holds = Math.max(0, holds - 1)), start()));
+  // Die Diashow läuft immer weiter (mit Ladebalken) – auch wenn die Maus über dem Bild ist
+  // oder ein Knopf angetippt wurde. Anhalten: Pause-Knopf, Runterscrollen, anderer Tab.
+  // Nur bei Bedienung mit der Tastatur (sichtbarer Fokus) wird kurz angehalten (Barrierefreiheit).
+  let keyboardHold = false;
+  hero.addEventListener('focusin', (e) => {
+    const kb = e.target.matches?.(':focus-visible') && !e.target.matches('[data-carousel-dot], [data-carousel-toggle], [data-carousel-sound]');
+    if (kb && !keyboardHold) {
+      keyboardHold = true;
+      holds++;
+      stop();
+    }
+  });
+  hero.addEventListener('focusout', (e) => {
+    if (keyboardHold && !hero.contains(e.relatedTarget)) {
+      keyboardHold = false;
+      holds = Math.max(0, holds - 1);
+      start();
+    }
+  });
   // Pausieren, wenn der Tab im Hintergrund ist ODER man nach unten gescrollt hat –
   // beim Zurückkommen geht Diashow und Klang genau dort weiter, wo sie angehalten haben.
   const updateVisibility = () => {

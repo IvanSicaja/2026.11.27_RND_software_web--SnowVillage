@@ -21,8 +21,9 @@ export function createAmbience(root, { onState } = {}) {
   let seq = 0;
   let suspendTimer = null;
   let unlockedAt = -Infinity; // Zeitpunkt der Ton-Freigabe durch das erste Tippen
+  let unlockedBy = null; // Element, das dabei angetippt wurde
 
-  // Zustand für Anzeige und Tests: off | waiting (wartet auf erstes Tippen) | playing | paused
+  // Zustand für Anzeige und Tests: off | waiting (wartet auf erstes Tippen) | loading | playing | paused
   const setState = (state) => {
     if (root.dataset.soundState === state) return;
     root.dataset.soundState = state;
@@ -31,16 +32,18 @@ export function createAmbience(root, { onState } = {}) {
   const refreshState = () => {
     if (!enabled) return setState('off');
     if (hidden) return setState('paused');
-    setState(ctx.state === 'running' ? 'playing' : 'waiting');
+    if (ctx.state !== 'running') return setState('waiting');
+    setState(current ? 'playing' : 'loading'); // "playing" erst, wenn der Klang wirklich läuft
   };
   ctx.addEventListener?.('statechange', refreshState);
 
   // Browser erlauben Ton erst nach der ersten Berührung/Taste auf der Seite.
   // Der Klang ist trotzdem "an" und startet beim ersten Tippen irgendwo auf der Seite.
   const UNLOCK_EVENTS = ['pointerdown', 'keydown', 'touchend'];
-  const unlock = () => {
+  const unlock = (e) => {
     if (!enabled || ctx.state === 'running') return removeUnlock();
     unlockedAt = performance.now();
+    unlockedBy = e?.target || null;
     if (hidden) return removeUnlock(); // läuft weiter, sobald das Startbild wieder sichtbar ist
     resumeSoftly().finally(refreshState);
     removeUnlock();
@@ -146,6 +149,9 @@ export function createAmbience(root, { onState } = {}) {
     },
     get unlockedAt() {
       return unlockedAt;
+    },
+    get unlockedBy() {
+      return unlockedBy;
     },
     async disable() {
       enabled = false;
