@@ -85,6 +85,7 @@
 | Eigene Fotos einbauen | `data/fotos/…` → in `main/` `npm run bilder` |
 | Naturklang eines Bildes ändern | `data/site.json` → `hero.slides[…].sound` / `soundLabel` |
 | Dorfleben-Einträge | `data/site.json` → `village.items` (Startseite zeigt 3, `/dorfleben` alle) |
+| Bildausschnitt im Karussell (Hoch-/Querformat) | `data/site.json` → `hero.slides[…].fokus` / `srcHochformat` |
 | Die 5 Bilder / Text im Startbild | `data/site.json` → `hero.slides`, `intro.title` (Überschrift im Bild) |
 | Eigenes 360°-Foto einbauen | JPG nach `main/public/images/panorama/` + Eintrag in `data/media.json` |
 | Farben, Abstände, Ecken ändern | `main/public/css/style.css` (oben, Abschnitt `:root`) |

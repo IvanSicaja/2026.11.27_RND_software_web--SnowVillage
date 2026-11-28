@@ -237,7 +237,9 @@ function initCarousel() {
   const renderCaption = () => {
     if (!caption) return;
     const on = soundBtn?.getAttribute('aria-pressed') === 'true';
-    caption.textContent = on ? slides[index].dataset.soundLabel || '' : '';
+    const label = slides[index].dataset.soundLabel || '';
+    const waiting = caption.classList.contains('is-waiting');
+    caption.textContent = on ? (waiting ? `${label} – zum Anhören einmal tippen` : label) : '';
     caption.hidden = !on || !caption.textContent;
   };
 
@@ -296,34 +298,75 @@ function initCarousel() {
     }),
   );
 
-  // Naturklang an/aus – Browser erlauben Ton erst nach einem Klick, daher standardmässig aus
-  soundBtn?.addEventListener('click', async () => {
-    const on = soundBtn.getAttribute('aria-pressed') !== 'true';
+  // Naturklang: standardmässig AN. Wer ihn ausschaltet, bei dem bleibt er aus (im Browser gemerkt).
+  const SOUND_KEY = 'naturklang';
+  const readPref = () => {
+    try {
+      return localStorage.getItem(SOUND_KEY) !== 'aus';
+    } catch {
+      return true;
+    }
+  };
+  const writePref = (on) => {
+    try {
+      if (on) localStorage.removeItem(SOUND_KEY);
+      else localStorage.setItem(SOUND_KEY, 'aus');
+    } catch { /* privat / blockiert */ }
+  };
+  const setPressed = (on) => {
     soundBtn.setAttribute('aria-pressed', String(on));
     soundBtn.setAttribute('aria-label', on ? 'Naturklang ausschalten' : 'Naturklang einschalten');
     renderCaption();
+  };
+  const onSoundState = (state) => {
+    if (!caption) return;
+    caption.classList.toggle('is-waiting', state === 'waiting');
+    renderCaption();
+  };
+  const startSound = async ({ auto }) => {
+    soundBtn.setAttribute('aria-busy', 'true');
     try {
-      if (on) {
-        soundBtn.setAttribute('aria-busy', 'true');
-        const { createAmbience } = await import(document.documentElement.dataset.klang || '/js/klang.js');
-        ambience ??= createAmbience(root);
-        ambience.setHidden(isHidden());
-        await ambience.enable(slides[index].dataset.sound);
-      } else {
-        await ambience?.disable();
-      }
+      const { createAmbience } = await import(document.documentElement.dataset.klang || '/js/klang.js');
+      ambience ??= createAmbience(root, { onState: onSoundState });
+      ambience.setHidden(isHidden());
+      await ambience.enable(slides[index].dataset.sound, { auto });
     } catch (err) {
       console.warn(err);
-      soundBtn.setAttribute('aria-pressed', 'false');
-      soundBtn.setAttribute('aria-label', 'Naturklang einschalten');
-      if (caption) {
+      await ambience?.disable().catch(() => {});
+      setPressed(false);
+      if (!auto && caption) {
         caption.textContent = 'Der Klang konnte nicht abgespielt werden.';
         caption.hidden = false;
       }
     } finally {
       soundBtn.removeAttribute('aria-busy');
     }
+  };
+
+  soundBtn?.addEventListener('click', async () => {
+    // Dieser Klick hat den Ton gerade erst freigegeben → nicht gleich wieder ausschalten
+    if (ambience && performance.now() - ambience.unlockedAt < 600) return;
+    // Klang ist an, wartet aber noch auf Freigabe → jetzt starten
+    if (soundBtn.getAttribute('aria-pressed') === 'true' && ambience?.waiting) {
+      await startSound({ auto: false });
+      return;
+    }
+    const on = soundBtn.getAttribute('aria-pressed') !== 'true';
+    setPressed(on);
+    writePref(on);
+    if (on) await startSound({ auto: false });
+    else await ambience?.disable();
   });
+
+  if (soundBtn) {
+    const on = readPref();
+    setPressed(on);
+    if (on) {
+      const go = () => startSound({ auto: true });
+      if (document.readyState === 'complete') go();
+      else window.addEventListener('load', go, { once: true });
+    }
+  }
 
   hero.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && (holds++, stop()));
   hero.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && ((holds = Math.max(0, holds - 1)), start()));
@@ -487,6 +530,7 @@ function initImageFallback() {
     if (img.dataset.fallback === 'done' || !/^https?:/.test(img.getAttribute('src') || '')) return;
     img.dataset.fallback = 'done';
     img.removeAttribute('srcset');
+    if (img.parentElement instanceof HTMLPictureElement) img.parentElement.querySelectorAll('source').forEach((el) => el.remove());
     img.src = '/images/fallback.webp';
   };
   document.addEventListener('error', (e) => e.target instanceof HTMLImageElement && swap(e.target), true);

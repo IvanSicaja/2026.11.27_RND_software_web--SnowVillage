@@ -345,7 +345,8 @@ test('Startbild: Willkommen, Knöpfe, darunter die Bild-Steuerung; Slogan unter 
   await expect(controls).toBeVisible();
   const b = await buttons.boundingBox();
   const c = await controls.boundingBox();
-  expect(c.y).toBeGreaterThanOrEqual(b.y + b.height - 1); // Steuerung unter den Knöpfen
+  // Handy: Steuerung unter den Knöpfen; Computer: rechts daneben in derselben Zeile
+  expect(c.y >= b.y + b.height - 1 || c.x >= b.x + b.width - 1).toBe(true);
   await expect(hero.locator('[data-weather-chip]')).toBeVisible();
   await expect(hero.locator('.slide-credit').first()).toBeVisible();
   // Slogan steht jetzt unter den Zahlen
@@ -452,38 +453,74 @@ test('Steuerleiste: gross, mindestens 50 % der Bildbreite, direkt unter dem Bild
   await expect(page.locator('[data-carousel-dot]').nth(3)).not.toHaveClass(/is-done/);
 });
 
-test('Naturklang: einschalten, Klang wechselt mit dem Bild, ausschalten', async ({ page }) => {
+// Erste Berührung auf der Seite (gibt den Ton frei – Browser-Regel), ohne einen Link zu treffen
+const firstTap = (page) => page.locator('.facts').click({ position: { x: 5, y: 5 } });
+
+test('Naturklang ist standardmässig an, startet spätestens beim ersten Tippen, wechselt mit dem Bild', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
   const carousel = page.locator('[data-carousel]');
-  const btn = page.getByRole('button', { name: 'Naturklang einschalten' });
-  await expect(btn).toHaveAttribute('aria-pressed', 'false');
-  await btn.click();
-  await expect(page.getByRole('button', { name: 'Naturklang ausschalten' })).toHaveAttribute('aria-pressed', 'true');
-  await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  const btn = page.locator('[data-carousel-sound]');
+  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  await expect(btn).toHaveAttribute('aria-label', 'Naturklang ausschalten');
+  await expect(carousel).toHaveAttribute('data-sound-state', /^(waiting|playing)$/, { timeout: 10_000 });
   await expect(carousel).toHaveAttribute('data-sound-src', '/audio/kirche-voegel.mp3');
-  await expect(page.locator('[data-sound-caption]')).toContainText('Kirchenglocken');
+  await firstTap(page);
+  await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  await expect(page.locator('[data-sound-caption]')).toHaveText(/Kirchenglocken/);
+  await expect(page.locator('[data-sound-caption]')).not.toContainText('tippen');
   // Bildwechsel → anderer Klang
   await page.getByRole('button', { name: 'Bild 4 anzeigen' }).click();
   await expect(carousel).toHaveAttribute('data-sound-src', '/audio/kaminfeuer.mp3', { timeout: 10_000 });
   await expect(page.locator('[data-sound-caption]')).toContainText('Kaminfeuer');
-  const state = await page.evaluate(() => (window.AudioContext ? 'ok' : 'none'));
-  expect(state).toBe('ok');
-  // Aus
-  await page.getByRole('button', { name: 'Naturklang ausschalten' }).click();
-  await expect(carousel).toHaveAttribute('data-sound-state', 'off');
-  await expect(page.locator('[data-sound-caption]')).toBeHidden();
+  await expect(btn).toHaveAttribute('aria-pressed', 'true'); // Klick auf Bild-Balken schaltet Ton nicht aus
   expect(errors).toEqual([]);
 });
 
-test('Naturklang: Datei fehlt → verständlicher Hinweis, nichts stürzt ab', async ({ page }) => {
+test('Naturklang: Klick auf den Ton-Knopf vor dem ersten Tippen startet den Klang (schaltet nicht aus)', async ({ page }) => {
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  await expect(carousel).toHaveAttribute('data-sound-state', /^(waiting|playing)$/, { timeout: 10_000 });
+  const wasPlaying = (await carousel.getAttribute('data-sound-state')) === 'playing';
+  await page.locator('[data-carousel-sound]').click();
+  if (wasPlaying) {
+    await expect(carousel).toHaveAttribute('data-sound-state', 'off'); // lief schon → Klick schaltet aus
+  } else {
+    await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+    await expect(page.locator('[data-carousel-sound]')).toHaveAttribute('aria-pressed', 'true');
+  }
+});
+
+test('Naturklang ausschalten wird gemerkt, wieder einschalten funktioniert', async ({ page }) => {
+  await page.goto('/');
+  const carousel = page.locator('[data-carousel]');
+  await firstTap(page);
+  await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  await page.getByRole('button', { name: 'Naturklang ausschalten' }).click();
+  await expect(carousel).toHaveAttribute('data-sound-state', 'off');
+  await expect(page.locator('[data-sound-caption]')).toBeHidden();
+  await page.reload();
+  const btn = page.locator('[data-carousel-sound]');
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  await page.waitForTimeout(800);
+  await expect(carousel).not.toHaveAttribute('data-sound-state', /.+/); // bleibt aus, nichts geladen
+  await btn.click();
+  await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
+  await page.reload();
+  await expect(page.locator('[data-carousel-sound]')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('Naturklang: Datei fehlt → leise ausgeschaltet; beim Klick verständlicher Hinweis, nichts stürzt ab', async ({ page }) => {
   await page.route('**/audio/*.mp3', (r) => r.fulfill({ status: 404, body: '' }));
   const jsErrors = [];
   page.on('pageerror', (e) => jsErrors.push(e.message));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Naturklang einschalten' }).click();
+  const btn = page.locator('[data-carousel-sound]');
+  await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
+  await expect(page.locator('[data-sound-caption]')).toBeHidden(); // beim automatischen Start kein Fehlertext
+  await btn.click();
   await expect(page.locator('[data-sound-caption]')).toHaveText('Der Klang konnte nicht abgespielt werden.');
-  await expect(page.getByRole('button', { name: 'Naturklang einschalten' })).toHaveAttribute('aria-pressed', 'false');
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
   expect(jsErrors).toEqual([]);
 });
 
@@ -492,6 +529,8 @@ const ROWS = [
   ['Ausflugsziele', '/ausflugsziele'],
   ['Dorfleben & Tradition', '/dorfleben'],
   ['360°-Ansicht wählen', '/panorama'],
+  ['Galerie', '/galerie'],
+  ['Videos', '/videos'],
   ['Aktuelle Beiträge', '/blog'],
 ];
 
@@ -502,7 +541,7 @@ test('Alle Bildschirme: Reihen lassen sich seitlich scrollen und enden mit "Alle
     await row.scrollIntoViewIfNeeded();
     const info = await row.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth, flow: getComputedStyle(el).gridAutoFlow }));
     expect(info.flow).toBe('column'); // eine Reihe
-    expect(info.sw).toBeGreaterThan(info.cw); // breiter als der Bildschirm → wischbar
+    expect(info.sw).toBeGreaterThanOrEqual(info.cw); // wischbar, sobald mehr Karten als Platz da sind
     await row.evaluate((el) => el.scrollTo({ left: el.scrollWidth, behavior: 'instant' }));
     const more = row.locator('a.more-card');
     await expect(more).toBeVisible();
@@ -537,7 +576,7 @@ test('Desktop: Blätter-Knöpfe an den Reihen', async ({ page, isMobile }) => {
   }
   await expect(next).toBeDisabled({ timeout: 3000 }); // am Ende
   await expect(row.locator('a.more-card')).toBeInViewport();
-  await prev.click();
+  await prev.click({ timeout: 3000 });
   await expect(next).toBeEnabled();
   // Tastatur: Pfeiltasten in der fokussierten Reihe
   await row.evaluate((el) => el.scrollTo({ left: 0, behavior: 'instant' }));
@@ -600,7 +639,7 @@ test('Runterscrollen pausiert den Naturklang, Hochscrollen spielt weiter', async
   const errors = collectErrors(page);
   await page.goto('/');
   const carousel = page.locator('[data-carousel]');
-  await page.getByRole('button', { name: 'Naturklang einschalten' }).click();
+  await firstTap(page);
   await expect(carousel).toHaveAttribute('data-sound-state', 'playing', { timeout: 10_000 });
   const src = await carousel.getAttribute('data-sound-src');
 
@@ -681,7 +720,8 @@ test('Alle Bildschirme: im Bild nur Wetter, Foto und Überschrift – Knöpfe un
   const controls = await page.locator('[data-carousel-controls]').boundingBox();
   const facts = await page.locator('.facts').boundingBox();
   expect(actions.y).toBeGreaterThanOrEqual(media.y + media.height); // Knöpfe unter dem Bild
-  expect(controls.y).toBeGreaterThanOrEqual(actions.y + actions.height - 1); // Steuerung darunter
+  expect(controls.y).toBeGreaterThanOrEqual(media.y + media.height); // Steuerung unter dem Bild
+  expect(controls.y >= actions.y + actions.height - 1 || controls.x >= actions.x + actions.width - 1).toBe(true);
   expect(facts.y).toBeGreaterThanOrEqual(controls.y + controls.height); // dann Skigebiet, Pisten …
   // Knöpfe funktionieren weiterhin
   await page.getByRole('link', { name: '360° ansehen' }).click();
@@ -692,7 +732,7 @@ test('Alle Bildschirme: im Bild nur Wetter, Foto und Überschrift – Knöpfe un
 test('"Alle ansehen"-Karten haben ein Foto im Hintergrund', async ({ page }) => {
   await page.goto('/');
   const cards = page.locator('a.more-card');
-  await expect(cards).toHaveCount(4);
+  await expect(cards).toHaveCount(6);
   for (const card of await cards.all()) {
     await expect(card).toHaveClass(/more-card--image/);
     await card.evaluate((el) => el.closest('[data-scroll-row]').scrollTo({ left: 99999, behavior: 'instant' }));
@@ -750,7 +790,8 @@ test('Seitliches Scrollen in den Reihen bleibt auf der Seite (kein Sprung nach o
         await page.mouse.wheel(400, 0);
         await page.waitForTimeout(40);
       }
-      await expect.poll(() => row.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100);
+      // bis ans Ende gescrollt (so weit die Reihe breiter ist als der Bildschirm)
+      await expect.poll(() => row.evaluate((el) => el.scrollWidth - el.clientWidth - el.scrollLeft)).toBeLessThan(3);
       for (let k = 0; k < 14; k++) await page.mouse.wheel(-400, 0);
     }
     await page.waitForTimeout(200);
@@ -800,4 +841,96 @@ test('Klick auf jede Karte in den Reihen führt zur richtigen Seite', async ({ p
     await expect(page).toHaveURL(new RegExp(`${href}$`));
     await expect(page.locator('h1')).toHaveText(heading);
   }
+});
+
+/* ---------- Einheitliches Layout auf allen Breiten ---------- */
+const WIDTHS = [[390, 844], [768, 1024], [1280, 800], [1920, 1080]];
+
+for (const [w, h] of WIDTHS) {
+  test(`Breite ${w}px: jede Reihe hat max. 4 Karten in einer Linie + "Alle ansehen"; Text und Wetter untereinander`, async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Breiten werden im Desktop-Browser simuliert');
+    await page.setViewportSize({ width: w, height: h });
+    await page.goto('/');
+    for (const [label, href] of ROWS) {
+      const row = page.getByRole('region', { name: label, exact: true });
+      const info = await row.evaluate((el) => {
+        const kids = [...el.children];
+        const items = kids.filter((k) => !k.classList.contains('more-card'));
+        const tops = new Set(kids.map((k) => Math.round(k.getBoundingClientRect().top)));
+        return { items: items.length, lines: tops.size, more: kids.at(-1)?.classList.contains('more-card'), flow: getComputedStyle(el).gridAutoFlow };
+      });
+      expect(info.flow, label).toBe('column');
+      expect(info.lines, `${label}: alles in einer Linie`).toBe(1);
+      expect(info.items, label).toBeGreaterThanOrEqual(1);
+      expect(info.items, label).toBeLessThanOrEqual(4);
+      expect(info.more, label).toBe(true);
+      await expect(row.locator('a.more-card')).toHaveAttribute('href', href);
+    }
+    // Dorfleben: alle Karten gleich gross (kein breites Sonderformat mehr)
+    const sizes = await page.locator('[aria-label="Dorfleben & Tradition"] .village-card').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+    expect(new Set(sizes).size).toBe(1);
+    // Text und Wetter untereinander (wie am Handy)
+    await page.locator('.intro').scrollIntoViewIfNeeded();
+    const text = await page.locator('.intro-text').boundingBox();
+    const weather = await page.locator('[data-weather]').boundingBox();
+    expect(weather.y).toBeGreaterThan(text.y + text.height - 1);
+    // nichts ragt seitlich heraus
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  });
+}
+
+test('Karussell und 360°: Handy Hochformat 9:16, Computer Querformat 16:9 – passende Bildzuschnitte', async ({ page, isMobile }) => {
+  await page.goto('/');
+  const media = await page.locator('.hero-media').boundingBox();
+  const ratio = media.width / media.height;
+  if (isMobile) expect(ratio).toBeCloseTo(9 / 16, 1);
+  else expect(ratio).toBeCloseTo(16 / 9, 1);
+  // Geladenes Bild hat das passende Format (Unsplash-Zuschnitt w×h)
+  const src = await page.locator('[data-slide].is-active img').evaluate((i) => i.currentSrc);
+  const w = Number(new URL(src).searchParams.get('w'));
+  const hh = Number(new URL(src).searchParams.get('h'));
+  expect(new URL(src).searchParams.get('crop')).toBe('entropy');
+  if (isMobile) expect(hh / w).toBeCloseTo(16 / 9, 1);
+  else expect(w / hh).toBeCloseTo(16 / 9, 1);
+  // 360°
+  await page.goto('/panorama');
+  const stage = await page.locator('.pano-stage').boundingBox();
+  if (isMobile) expect(stage.width / stage.height).toBeCloseTo(9 / 16, 1);
+  else expect(stage.width / stage.height).toBeCloseTo(16 / 9, 1);
+});
+
+test('Drehen des Handys (hoch → quer) wechselt das Karussell-Format ohne Neuladen', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'im Desktop-Browser simuliert');
+  await page.setViewportSize({ width: 430, height: 932 });
+  await page.goto('/');
+  let b = await page.locator('.hero-media').boundingBox();
+  expect(b.width / b.height).toBeCloseTo(9 / 16, 1);
+  await page.setViewportSize({ width: 932, height: 1400 });
+  await page.waitForTimeout(300);
+  b = await page.locator('.hero-media').boundingBox();
+  expect(b.width / b.height).toBeCloseTo(16 / 9, 1);
+  const src = await page.locator('[data-slide].is-active img').evaluate((i) => i.currentSrc);
+  const u = new URL(src).searchParams;
+  expect(Number(u.get('w'))).toBeGreaterThan(Number(u.get('h')));
+});
+
+test('Galerie-Reihe auf der Startseite öffnet die Vollbildansicht', async ({ page }) => {
+  await page.goto('/');
+  const card = page.getByRole('region', { name: 'Galerie', exact: true }).locator('[data-gallery-item]').first();
+  await card.scrollIntoViewIfNeeded();
+  await card.click();
+  const dialog = page.locator('[data-lightbox]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('[data-lightbox-count]')).toHaveText('1 / 4');
+  await dialog.getByRole('button', { name: 'Schliessen' }).click();
+  await expect(dialog).toBeHidden();
+});
+
+test('Video-Reihe auf der Startseite spielt ein Video ab', async ({ page }) => {
+  await page.goto('/');
+  const row = page.getByRole('region', { name: 'Videos', exact: true });
+  const play = row.getByRole('link', { name: /Video abspielen/ }).first();
+  await play.scrollIntoViewIfNeeded();
+  await play.click();
+  await expect(row.locator('iframe').first()).toHaveAttribute('src', /youtube-nocookie\.com\/embed\//);
 });

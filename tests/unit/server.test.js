@@ -195,12 +195,17 @@ test('Startseite: wischbare Reihen enden mit "Alle ansehen"', async () => {
   const body = await (await get('/')).text();
   const rows = [...body.matchAll(/<div class="grid [^"]*grid--scroll[^"]*"[^>]*aria-label="([^"]+)"[^>]*data-scroll-row>([\s\S]*?)<\/div>\s*(?=<\/section>|<\/div>)/g)];
   const more = [...body.matchAll(/<a class="more-card[^"]*" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(more, ['/ausflugsziele', '/dorfleben', '/panorama', '/blog']);
+  assert.deepEqual(more, ['/ausflugsziele', '/dorfleben', '/panorama', '/galerie', '/videos', '/blog']);
+  // Jede Reihe: höchstens 4 Karten vor "Alle ansehen"
+  for (const m of body.matchAll(/data-scroll-row>([\s\S]*?)<a class="more-card/g)) {
+    const n = (m[1].match(/class="(card [^"]*|village-card|pano-card|gallery-item gallery-card|video-card[^"]*)"/g) || []).length;
+    assert.ok(n >= 1 && n <= 4, `Reihe mit ${n} Karten`);
+  }
   assert.ok(rows.length >= 3);
   // Dorfleben: nur die ersten 3 auf der Startseite, alle auf /dorfleben
   const village = await (await get('/dorfleben')).text();
   assert.equal((village.match(/class="village-card"/g) || []).length, store.site.village.items.length);
-  assert.equal((body.match(/class="village-card"/g) || []).length, 3);
+  assert.equal((body.match(/class="village-card"/g) || []).length, 4);
 });
 
 test('Karussell: jedes Bild hat einen eigenen Naturklang, alle Dateien vorhanden', async () => {
@@ -215,7 +220,7 @@ test('Karussell: jedes Bild hat einen eigenen Naturklang, alle Dateien vorhanden
     const buf = Buffer.from(await res.arrayBuffer());
     assert.ok(buf.length > 100_000 && buf.length < 600_000, `${src}: ${buf.length} Bytes`);
   }
-  assert.match(body, /data-carousel-sound aria-pressed="false"/);
+  assert.match(body, /data-carousel-sound aria-pressed="true" aria-label="Naturklang ausschalten"/); // standardmässig an
 });
 
 test('Startseite: Karussell, Karte und Dorfleben sind enthalten', async () => {

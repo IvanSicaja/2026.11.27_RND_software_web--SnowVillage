@@ -42,10 +42,38 @@ export const icons = {
 // Unsplash liefert jede Grösse und das beste Format (AVIF/WebP) automatisch über sein CDN.
 const UNSPLASH = /^https:\/\/images\.unsplash\.com\/[\w-]+$/;
 export const isRemote = (src) => /^https?:\/\//.test(src || '');
-export function unsplash(src, width, ratio) {
+export function unsplash(src, width, ratio, { smart = false } = {}) {
   const q = new URLSearchParams({ auto: 'format', fit: 'crop', w: String(width), q: '72' });
   if (ratio) q.set('h', String(Math.round(width / ratio)));
+  if (smart) q.set('crop', 'entropy'); // Zuschnitt auf den interessantesten Bildteil
   return `${src}?${q}`;
+}
+
+/* Karussellbild: Hochformat 9:16 fürs Handy, Querformat 16:9 ab Tablet/PC.
+   Unsplash schneidet automatisch passend zu. Für eigene Fotos optional "srcHochformat"
+   (eigenes Hochformatbild) und "fokus" (z. B. "40% 50%" = wichtigster Bildpunkt). */
+const BREAKPOINT_WIDE = '(min-width: 768px)';
+function slidePicture(imageVariants, sl, eager) {
+  const fokus = typeof sl.fokus === 'string' && /^[\d.]+% [\d.]+%$/.test(sl.fokus) ? sl.fokus : '';
+  const style = fokus ? raw(` style="object-position: ${fokus}"`) : '';
+  const load = eager ? raw('fetchpriority="high"') : raw('loading="lazy"');
+  if (UNSPLASH.test(sl.src)) {
+    const wide = [960, 1280, 1600, 2000].map((w) => `${unsplash(sl.src, w, 16 / 9, { smart: true })} ${w}w`).join(', ');
+    const tallSrc = UNSPLASH.test(sl.srcHochformat || '') ? sl.srcHochformat : sl.src;
+    const tall = [480, 720, 1080, 1440].map((w) => `${unsplash(tallSrc, w, 9 / 16, { smart: true })} ${w}w`).join(', ');
+    return html`<picture>
+        <source media="${BREAKPOINT_WIDE}" srcset="${wide}" sizes="100vw">
+        <img src="${unsplash(tallSrc, 720, 9 / 16, { smart: true })}" srcset="${tall}" sizes="100vw" alt="${sl.alt || ''}" width="1080" height="1920"${style} ${load} decoding="async">
+      </picture>`;
+  }
+  const wideVars = variantsFor(imageVariants, sl.src, {});
+  const tallVars = sl.srcHochformat ? variantsFor(imageVariants, sl.srcHochformat, {}) : wideVars;
+  const set = (v) => v.map((x) => `${x.url} ${x.width}w`).join(', ');
+  const fallback = (v, src) => (v.length ? v[Math.min(1, v.length - 1)].url : src);
+  return html`<picture>
+      ${wideVars.length ? html`<source media="${BREAKPOINT_WIDE}" srcset="${set(wideVars)}" sizes="100vw">` : html`<source media="${BREAKPOINT_WIDE}" srcset="${sl.src}">`}
+      <img src="${fallback(tallVars, sl.srcHochformat || sl.src)}"${tallVars.length ? html` srcset="${set(tallVars)}" sizes="100vw"` : ''} alt="${sl.alt || ''}"${style} ${load} decoding="async">
+    </picture>`;
 }
 const REMOTE_WIDTHS = [480, 800, 1200, 1600, 2000];
 export function variantsFor(imageVariants, base, { ratio, maxWidth = 2000 } = {}) {
@@ -240,6 +268,14 @@ function scrollRow(items, { label, cols = 3, more, cls = '' }) {
 </div>`;
 }
 
+// Galeriebild als Karte in einer Reihe (einheitliches 4:5-Format)
+function galleryCard(ctx, g, i) {
+  return html`<a class="gallery-item gallery-card" href="${largest(ctx.imageVariants, g.src)}" data-gallery-item data-index="${i}" data-caption="${g.caption || ''}" data-alt="${g.alt}" data-credit="${g.credit ? `Foto: ${g.credit} / Unsplash` : ''}">
+    ${picture(ctx.imageVariants, g.src, { alt: g.alt, sizes: '(min-width: 1080px) 280px, (min-width: 640px) 42vw, 80vw', ratio: 4 / 5, maxWidth: 1200 })}
+    ${g.caption ? html`<span class="gallery-card-caption">${g.caption}</span>` : ''}
+  </a>`;
+}
+
 function galleryGrid(ctx, items, { limit } = {}) {
   const list = limit ? items.slice(0, limit) : items;
   return html`
@@ -307,7 +343,7 @@ function heroCarousel(ctx) {
   <div class="hero-media carousel" data-carousel aria-roledescription="Karussell" aria-label="Bilder aus ${site.name}">
     ${slides.map((sl, i) => html`
     <div class="carousel-slide${i === 0 ? ' is-active' : ''}" role="group" aria-roledescription="Bild" aria-label="${i + 1} von ${slides.length}" data-slide${sl.sound ? html` data-sound="${sl.sound}" data-sound-label="${sl.soundLabel || ''}"` : ''}${i === 0 ? '' : raw(' inert')}>
-      ${picture(ctx.imageVariants, sl.src, { alt: sl.alt || '', eager: i === 0, sizes: '100vw', maxWidth: 2000 })}
+      ${slidePicture(ctx.imageVariants, sl, i === 0)}
       ${sl.credit ? html`<a class="slide-credit" href="${sl.creditUrl || 'https://unsplash.com'}" target="_blank" rel="noopener">Foto: ${sl.credit} / Unsplash</a>` : ''}
     </div>`)}
     <p class="weather-chip" data-weather-chip hidden></p>
@@ -327,7 +363,7 @@ function heroCarousel(ctx) {
       <div class="carousel-dots" role="group" aria-label="Bild auswählen">
         ${slides.map((_, i) => html`<button type="button" class="carousel-dot" data-carousel-dot="${i}" aria-label="Bild ${i + 1} anzeigen"${i === 0 ? raw(' aria-current="true"') : ''}><span class="dot-bar"><span class="dot-fill"></span></span></button>`)}
       </div>
-      ${slides.some((sl) => sl.sound) ? html`<button class="carousel-btn carousel-sound" type="button" data-carousel-sound aria-pressed="false" aria-label="Naturklang einschalten">
+      ${slides.some((sl) => sl.sound) ? html`<button class="carousel-btn carousel-sound" type="button" data-carousel-sound aria-pressed="true" aria-label="Naturklang ausschalten">
         <span class="i-sound-off">${icons.soundOff}</span><span class="i-sound-on">${icons.soundOn}</span>
       </button>` : ''}
     </div>
@@ -437,7 +473,8 @@ function villageCard(ctx, it) {
     </figure>`;
 }
 
-const HOME_LIMIT = 3;
+// Jede Reihe auf der Startseite: höchstens 4 Karten, danach "Alle ansehen"
+const HOME_LIMIT = 4;
 
 function villageSection(ctx) {
   const v = ctx.site.village;
@@ -465,7 +502,7 @@ ${pageHead('Dorfleben', v.title, v.text)}
 /* ---------- Seiten ---------- */
 export function homePage(ctx) {
   const { site, media, articles } = ctx;
-  const latest = articles.slice(0, 3);
+  const latest = articles.slice(0, HOME_LIMIT);
   const body = html`
 ${heroCarousel(ctx)}
 
@@ -490,7 +527,7 @@ ${heroCarousel(ctx)}
 <section class="container section" id="in-der-naehe">
   ${sectionHead('In der Nähe', '/ausflugsziele', 'Alle Routen & Ziele', 'Wandern, laufen, Velo fahren – und die schönsten Aussichtspunkte. Kategorien antippen zum Ein- und Ausblenden.')}
   ${mapBlock(ctx)}
-  <div class="mt">${scrollRow(media.places.map((p) => placeCard(ctx, p)), { label: 'Ausflugsziele', cols: 4, more: { href: '/ausflugsziele', label: 'Alle Routen & Ziele', count: media.places.length + ctx.mapItems.length, image: media.gallery.find((g) => /Wander/i.test(g.caption))?.src || media.places[0]?.image } })}</div>
+  <div class="mt">${scrollRow(media.places.slice(0, HOME_LIMIT).map((p) => placeCard(ctx, p)), { label: 'Ausflugsziele', cols: 4, more: { href: '/ausflugsziele', label: 'Alle Routen & Ziele', count: media.places.length + ctx.mapItems.length, image: media.gallery.find((g) => /Wander/i.test(g.caption))?.src || media.places[0]?.image } })}</div>
 </section>
 
 ${villageSection(ctx)}
@@ -502,13 +539,21 @@ ${villageSection(ctx)}
 
 <section class="container section">
   ${sectionHead('Galerie', '/galerie', 'Alle Bilder')}
-  ${galleryGrid(ctx, media.gallery, { limit: 6 })}
+  <div data-gallery>
+  ${scrollRow(media.gallery.slice(0, HOME_LIMIT).map((g, i) => galleryCard(ctx, g, i)), {
+    label: 'Galerie',
+    more: { href: '/galerie', label: 'Alle Bilder', count: media.gallery.length, image: (media.gallery[HOME_LIMIT] || media.gallery[0]).src },
+  })}
+  </div>
 </section>
 
 ${media.videos.length ? html`
 <section class="container section">
   ${sectionHead('Videos', '/videos', 'Alle Videos')}
-  <div class="grid grid--2">${media.videos.slice(0, 2).map((v) => videoCard(ctx, v))}</div>
+  ${scrollRow(media.videos.slice(0, HOME_LIMIT).map((v) => videoCard(ctx, v)), {
+    label: 'Videos',
+    more: { href: '/videos', label: 'Alle Videos', count: media.videos.length, image: media.videos[HOME_LIMIT]?.poster || media.videos[0].poster },
+  })}
 </section>` : ''}
 
 ${latest.length ? html`

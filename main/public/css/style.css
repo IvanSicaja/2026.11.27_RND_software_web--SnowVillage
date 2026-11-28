@@ -238,10 +238,25 @@ main { display: block; outline: none; }
 /* ---------- Hero mit Karussell ---------- */
 /* Handy: im Bild nur Wetter, Fotonachweis und Überschrift – Knöpfe und Steuerung darunter,
    damit das ganze Bild sichtbar ist. Ab Tablet liegt alles wie gewohnt im Bild. */
-.hero { position: relative; margin-top: 4px; padding-inline: 8px; display: grid; grid-template-columns: minmax(0, 1fr); }
+.hero {
+  position: relative; margin-top: 4px; padding-inline: 8px; display: grid; grid-template-columns: minmax(0, 1fr);
+  /* Bildbreite so, dass das Format exakt bleibt und das ganze Bild auf den Bildschirm passt */
+  --hero-w: min(100%, calc((100svh - var(--header) - 24px) * 9 / 16));
+}
 .hero-media {
   grid-area: 1 / 1; position: relative; border-radius: var(--r-lg); overflow: hidden; background: #2b2b2b;
-  height: min(72svh, 640px); min-height: 440px;
+  /* Handy: Hochformat 9:16, ab 768 px Querformat 16:9 – immer exakt */
+  aspect-ratio: 9 / 16; width: var(--hero-w); justify-self: center;
+}
+.carousel-slide picture { display: block; width: 100%; height: 100%; }
+@media (min-width: 768px) {
+  .hero-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .hero-bar .actions { flex: none; flex-wrap: nowrap; }
+  .hero-content .hero-bar .actions .btn { flex: none; min-width: 150px; }
+  .hero-bar .carousel-controls { flex: 1; min-width: 360px; width: auto; margin-top: 0; }
+  .hero-bar .sound-caption { flex-basis: 100%; margin-top: 0; }
+  .hero { --hero-w: min(100%, calc((100svh - var(--header) - 110px) * 16 / 9)); }
+  .hero-media { aspect-ratio: 16 / 9; }
 }
 .carousel-slide {
   position: absolute; inset: 0; opacity: 0;
@@ -263,8 +278,8 @@ main { display: block; outline: none; }
 }
 .slide-credit:hover { text-decoration: underline; }
 .hero-content { display: contents; }
-.hero-content h1 { grid-area: 1 / 1; align-self: end; position: relative; z-index: 2; color: #fff; margin: 0; padding: 0 20px 22px; max-width: 14ch; pointer-events: none; }
-.hero-bar { grid-area: 2 / 1; margin-top: 14px; }
+.hero-content h1 { grid-area: 1 / 1; align-self: end; justify-self: center; width: var(--hero-w); position: relative; z-index: 2; color: #fff; margin: 0; padding: 0 20px 22px; pointer-events: none; }
+.hero-bar { grid-area: 2 / 1; justify-self: center; width: var(--hero-w); margin-top: 14px; }
 .hero-bar .btn--light { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
 .hero-bar .btn--ghost-light { background: transparent; color: var(--ink); border-color: var(--stone-2); backdrop-filter: none; }
 .hero-bar .btn--ghost-light:hover { background: var(--stone); }
@@ -320,9 +335,7 @@ main { display: block; outline: none; }
 @media (min-width: 640px) {
   /* Gleiches Layout wie am Handy: im Bild nur Wetter, Foto, Überschrift – Knöpfe und Steuerung darunter */
   .hero { padding-inline: var(--gutter); margin-top: 8px; }
-  .hero-media { height: clamp(500px, 72vh, 720px); min-height: 500px; }
   .hero-content h1 { padding: 0 40px 36px; }
-  .hero-bar { margin-top: 18px; width: 100%; max-width: 760px; }
   .weather-chip { left: 22px; top: 22px; }
   .slide-credit { top: 22px; right: 22px; }
 }
@@ -351,7 +364,8 @@ main { display: block; outline: none; }
 .intro .eyebrow { color: var(--wood); }
 .intro-text { color: var(--muted); max-width: 62ch; }
 .intro-grid { display: grid; gap: 24px; align-items: start; }
-@media (min-width: 960px) { .intro-grid { grid-template-columns: 1.5fr 1fr; gap: 48px; } }
+/* Wie am Handy: Text und Wetter untereinander (auf allen Bildschirmen) */
+.intro-grid .weather { max-width: 760px; }
 
 .weather { display: grid; gap: 4px; background: var(--surface); }
 .weather .eyebrow { color: var(--wood); margin-bottom: 4px; }
@@ -449,7 +463,13 @@ main { display: block; outline: none; }
 /* Reihen bleiben auch auf grösseren Bildschirmen eine wischbare Reihe – die nächste Karte schaut hervor */
 .grid.grid--scroll { grid-template-columns: none; }
 @media (min-width: 640px) { .grid.grid--scroll { grid-auto-columns: calc((100% - 2 * var(--gutter) - 20px) / 2.25); } }
-@media (min-width: 1080px) { .grid.grid--scroll { grid-auto-columns: calc((100% - 2 * var(--gutter) - 40px) / 3.25); } }
+@media (min-width: 1080px) { .grid.grid--scroll { grid-auto-columns: calc((100% - 2 * var(--gutter) - 80px) / 4.35); } }
+/* Galerie-Karte in der Reihe */
+.gallery-card { position: relative; display: block; aspect-ratio: 4 / 5; border-radius: var(--r); }
+.gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+.gallery-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / .6)); border-radius: inherit; pointer-events: none; }
+.gallery-card-caption { position: absolute; z-index: 1; left: 16px; right: 16px; bottom: 14px; color: #fff; font-weight: 560; font-size: .98rem; }
+.grid--scroll .video-card { min-width: 0; }
 
 .card {
   position: relative; display: flex; flex-direction: column;
@@ -489,9 +509,6 @@ main { display: block; outline: none; }
 .village-card figcaption { position: absolute; z-index: 1; left: 20px; right: 20px; bottom: 18px; color: #fff; }
 .village-card h3 { color: #fff; font-size: 1.3rem; margin-bottom: 4px; }
 .village-card p { margin: 0; color: rgb(255 255 255 / .9); font-size: .95rem; }
-@media (min-width: 640px) and (max-width: 1079px) {
-  .village-card:first-child { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
-}
 
 /* ---------- Karte ---------- */
 .map-toolbar { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
@@ -550,10 +567,11 @@ main { display: block; outline: none; }
 
 /* ---------- 360° Panorama ---------- */
 .pano-stage {
-  position: relative; aspect-ratio: 4 / 5; min-height: 320px;
+  /* Handy: Hochformat 9:16, ab 768 px Querformat 16:9 */
+  position: relative; aspect-ratio: 9 / 16; width: min(100%, calc((100svh - var(--header) - 40px) * 9 / 16)); margin-inline: auto;
   border-radius: var(--r-lg); overflow: hidden; background: #1b1b1b;
 }
-@media (min-width: 640px) { .pano-stage { aspect-ratio: 16 / 8; } }
+@media (min-width: 768px) { .pano-stage { aspect-ratio: 16 / 9; width: min(100%, calc((100svh - var(--header) - 60px) * 16 / 9)); } }
 .pano-viewer { position: absolute; inset: 0; }
 .pano-start {
   position: absolute; inset: 0; border: 0; padding: 0; margin: 0; cursor: pointer; background: #1b1b1b;

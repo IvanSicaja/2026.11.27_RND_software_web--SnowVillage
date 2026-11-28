@@ -1,6 +1,6 @@
 {
   "name": "dorf-website",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "description": "Minimalistische Website für ein Skidorf – 360°-Panoramen, Galerie, Videos und Blog.",
   "type": "module",

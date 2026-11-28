@@ -51,6 +51,17 @@ In `data/site.json` unter `location` eintragen:
 
 Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 
+## Ein Layout für alle Bildschirme
+
+Die Website sieht auf Handy, Tablet und Computer gleich aus (Handy-Layout als Vorlage). Einziger Unterschied:
+**Karussell und 360°** sind auf dem Handy im **Hochformat 9:16**, ab 768 px Breite im **Querformat 16:9** –
+immer exakt und so gross, dass das ganze Bild auf den Bildschirm passt.
+
+**Brauche ich zwei Fotos pro Bild?** Nein. Für Unsplash-Fotos wird automatisch der passende Ausschnitt erzeugt
+(intelligenter Zuschnitt auf den interessantesten Bildteil). Für eigene Fotos in `data/site.json` → `hero.slides`:
+- `"fokus": "40% 50%"` – der wichtigste Bildpunkt (waagrecht, senkrecht) bleibt beim Zuschnitt sichtbar
+- `"srcHochformat": "…"` – optional ein eigenes Hochformat-Foto fürs Handy (z. B. vom Handy aufgenommen)
+
 ## Startbild: Karussell mit Naturklängen
 
 - 5 Bilder wechseln alle 6 Sekunden und **zoomen langsam hinein**.
@@ -59,18 +70,21 @@ Danach zeigen **Temperatur** und **Karte** automatisch den richtigen Ort.
 - Eine **grosse Steuerleiste** (ganze Breite auf dem Handy, ~60 % der Bildbreite am Computer):
   Pause/Start, ein Balken pro Bild zum Antippen (zeigt auch den Fortschritt) und der **Lautsprecher-Knopf**.
 - Jedes Bild hat einen **eigenen Naturklang** (Kirchenglocken & Vögel, Bergwind & Ski, Bergsee, Kaminfeuer, Meer & Möwen).
-  Ton ist standardmässig aus; nach dem Einschalten wird beim Bildwechsel weich übergeblendet.
+  **Ton ist standardmässig an.** Browser erlauben Ton erst nach der ersten Berührung der Seite – darum startet der Klang
+  spätestens beim ersten Tippen/Klicken irgendwo auf der Seite (vorher steht unter der Leiste „zum Anhören einmal tippen“).
+  Wer den Ton ausschaltet, bei dem bleibt er aus (im Browser gemerkt). Beim Bildwechsel wird weich übergeblendet.
 - **Ruhe beim Lesen:** Scrollt man nach unten (Startbild nicht mehr sichtbar), pausieren Diashow und Klang weich.
   Zurück oben geht beides genau dort weiter, wo es angehalten hat. Ebenso, wenn der Browser-Tab im Hintergrund ist.
   Details: `assets/01_media/03_sounds/naturklaenge.md`.
 
 ## Wischbare Reihen
 
-Auf allen Bildschirmen stehen Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten und Aktuelles jeweils **in einer Reihe**
+Jeder Abschnitt der Startseite ist gleich aufgebaut: **eine Reihe mit höchstens 4 Karten, danach „Alle ansehen“** –
+Ausflugsziele, Dorfleben & Tradition, 360°-Ansichten, Galerie, Videos und Aktuelles. Oben rechts steht zusätzlich
+der Link zur Übersicht. Die Reihen stehen auf allen Bildschirmen **in einer Linie**
 zum seitlichen Scrollen (Wischen, Trackpad, Shift+Mausrad, Pfeiltasten oder die runden Blätter-Knöpfe am Computer). Am Ende jeder Reihe führt die Karte **„Alle ansehen“** (mit Foto im Hintergrund) zur Übersichtsseite
-(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/blog`). Seitliches Scrollen löst nie die „Zurück“-Geste des Browsers aus
+(`/ausflugsziele`, `/dorfleben`, `/panorama`, `/galerie`, `/videos`, `/blog`). Seitliches Scrollen löst nie die „Zurück“-Geste des Browsers aus
 und lässt die Seite nicht springen.
-Galerie und Videos bleiben unverändert.
 
 ## Karte mit Routen – direkt aus Google Maps
 
@@ -212,7 +226,7 @@ npm run test:e2e       # echte Browser, Desktop + Handy (Playwright + axe)
 
 Für die Browser-Tests einmalig `npx playwright install chromium` ausführen (oder Google Chrome installiert haben).
 
-Geprüft werden u. a.: **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Satellit als Standard, Ansicht wechseln und merken, Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
+Geprüft werden u. a.: **Layout bei 390, 768, 1280 und 1920 px Breite** (eine Linie, max. 4 Karten + „Alle ansehen“), Bildformat 9:16/16:9 inkl. Drehen des Handys, Ton standardmässig an, **jeder Menüeintrag auf Handy und Desktop**, Zoom-in, Grösse der Steuerleiste, Pause beim Runterscrollen, Naturklänge (an/aus, Wechsel, Fehlerfall), wischbare Reihen mit „Alle ansehen“, Wettertabelle, alle Footer-Links, alle Seiten und Artikel, Aufbau des Startbilds, 7-Tage-Wetter, kaputte Bilder und Links, Barrierefreiheit (WCAG 2.1 AA), Handy-Menü, Karussell (automatisch, Punkte, Pause, Wischen), Wetter (inkl. Ausfall), Karte (Satellit als Standard, Ansicht wechseln und merken, Filter, Popups, Google-Links), KML/GPX-Import, 360°-Viewer, Lightbox, Video-Laden, Ersatzbilder, 404, Funktion ohne JavaScript, Sicherheits-Header, Ladezeit.
 Externe Dienste (Fotos, Kartenbilder, Wetter, YouTube) werden in den Tests durch lokale Daten ersetzt – die Tests laufen auch ohne Internet.
 
 ## Platzhalter-Bilder neu erzeugen (optional, Python)

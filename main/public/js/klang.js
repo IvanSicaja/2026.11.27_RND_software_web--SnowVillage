@@ -7,7 +7,7 @@ const FADE_IN = 1.6;
 const FADE_OUT = 1.2;
 const VOLUME = 0.8;
 
-export function createAmbience(root) {
+export function createAmbience(root, { onState } = {}) {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) throw new Error('Web Audio wird nicht unterstützt');
   const ctx = new AC();
@@ -20,6 +20,33 @@ export function createAmbience(root) {
   let hidden = false; // Startbild nicht sichtbar oder Tab im Hintergrund
   let seq = 0;
   let suspendTimer = null;
+  let unlockedAt = -Infinity; // Zeitpunkt der Ton-Freigabe durch das erste Tippen
+
+  // Zustand für Anzeige und Tests: off | waiting (wartet auf erstes Tippen) | playing | paused
+  const setState = (state) => {
+    if (root.dataset.soundState === state) return;
+    root.dataset.soundState = state;
+    onState?.(state);
+  };
+  const refreshState = () => {
+    if (!enabled) return setState('off');
+    if (hidden) return setState('paused');
+    setState(ctx.state === 'running' ? 'playing' : 'waiting');
+  };
+  ctx.addEventListener?.('statechange', refreshState);
+
+  // Browser erlauben Ton erst nach der ersten Berührung/Taste auf der Seite.
+  // Der Klang ist trotzdem "an" und startet beim ersten Tippen irgendwo auf der Seite.
+  const UNLOCK_EVENTS = ['pointerdown', 'keydown', 'touchend'];
+  const unlock = () => {
+    if (!enabled || ctx.state === 'running') return removeUnlock();
+    unlockedAt = performance.now();
+    if (hidden) return removeUnlock(); // läuft weiter, sobald das Startbild wieder sichtbar ist
+    resumeSoftly().finally(refreshState);
+    removeUnlock();
+  };
+  const addUnlock = () => UNLOCK_EVENTS.forEach((e) => document.addEventListener(e, unlock, { capture: true, passive: true }));
+  const removeUnlock = () => UNLOCK_EVENTS.forEach((e) => document.removeEventListener(e, unlock, { capture: true }));
 
   // Weich leiser werden und anhalten – die Wiedergabe bleibt genau an dieser Stelle stehen
   const pauseSoftly = () => {
@@ -29,7 +56,7 @@ export function createAmbience(root) {
     master.gain.setValueAtTime(master.gain.value, now);
     master.gain.linearRampToValueAtTime(0, now + 0.5);
     suspendTimer = setTimeout(() => hidden && ctx.state === 'running' && ctx.suspend(), 550);
-    root.dataset.soundState = 'paused';
+    refreshState();
   };
   // Dort weitermachen, wo angehalten wurde, und weich lauter werden
   const resumeSoftly = async () => {
@@ -39,7 +66,7 @@ export function createAmbience(root) {
     master.gain.cancelScheduledValues(now);
     master.gain.setValueAtTime(master.gain.value, now);
     master.gain.linearRampToValueAtTime(VOLUME, now + 0.8);
-    if (current) root.dataset.soundState = 'playing';
+    refreshState();
   };
 
   const load = (url) => {
@@ -94,23 +121,39 @@ export function createAmbience(root) {
     fadeOut(current);
     current = { src, gain, url };
     root.dataset.soundSrc = url;
-    root.dataset.soundState = hidden ? 'paused' : 'playing';
+    refreshState();
   }
 
   return {
-    async enable(url) {
+    /** auto = ohne Klick gestartet (Standard beim Seitenaufruf) */
+    async enable(url, { auto = false } = {}) {
       enabled = true;
-      if (ctx.state !== 'running') await ctx.resume();
       master.gain.value = VOLUME;
+      if (ctx.state !== 'running') {
+        if (auto) {
+          ctx.resume().catch(() => {}); // klappt nur, wenn der Browser es erlaubt – sonst beim ersten Tippen
+          addUnlock();
+        } else {
+          await ctx.resume();
+        }
+      }
       await play(url);
       if (hidden) pauseSoftly();
+      refreshState();
+    },
+    get waiting() {
+      return enabled && !hidden && ctx.state !== 'running';
+    },
+    get unlockedAt() {
+      return unlockedAt;
     },
     async disable() {
       enabled = false;
       seq++;
       fadeOut(current);
       current = null;
-      root.dataset.soundState = 'off';
+      removeUnlock();
+      refreshState();
       delete root.dataset.soundSrc;
       setTimeout(() => !enabled && ctx.state === 'running' && ctx.suspend(), (FADE_OUT + 0.2) * 1000);
     },
